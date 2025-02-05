@@ -1,0 +1,53 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    ext {
+        buildToolsVersion = "33.0.0"
+        minSdkVersion = 23
+        compileSdkVersion = 34
+        targetSdkVersion = 34
+
+        kotlinVersion = "1.8.0"
+
+        firebaseAppDistribution = "5.0.0"
+
+        // use the same NDK version as the Voice SDK
+        ndkVersion = "25.2.9519653"
+    }
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle")
+        classpath("com.facebook.react:react-native-gradle-plugin")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+        classpath("com.google.gms:google-services:4.3.15")
+        classpath("com.google.firebase:firebase-appdistribution-gradle:$firebaseAppDistribution")
+    }
+}
+
+allprojects {
+    repositories {
+        maven {
+            // Detox is installed from npm
+            url("$rootDir/../node_modules/detox/Detox-android")
+        }
+    }
+}
+
+subprojects {
+    afterEvaluate { subproject ->
+        // fix detox with auth0 error, reference: https://github.com/auth0/react-native-auth0/issues/387#issuecomment-918483390
+        if (subproject.name == 'react-native-auth0') {
+            String taskRequests = getGradle().getStartParameter().getTaskRequests().toString()
+            if (taskRequests.contains("assembleAndroidTest")) {
+                android {
+                    defaultConfig {
+                        manifestPlaceholders = [auth0Domain: "E2E_TEST", auth0Scheme: "com.E2E.TEST"]
+                    }
+                }
+            }
+        }
+    }
+}
