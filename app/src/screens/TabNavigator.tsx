@@ -9,17 +9,12 @@ import ActiveCallBanner from '../components/ActiveCallBanner';
 import { useConnectedActiveCallBanner } from '../components/ActiveCallBanner/hooks';
 import Home from './Home';
 import Dialer from './Dialer';
-import About from './About';
 import { type TabParamList } from './types';
-import { getEnvVariable } from '../util/env';
 
 const HomeSource = require('../../assets/icons/home.png');
 const HomeSelectedSource = require('../../assets/icons/home-selected.png');
 const DialpadSource = require('../../assets/icons/dialpad-dark.png');
 const DialpadSelectedSource = require('../../assets/icons/dialpad-selected.png');
-const AboutSource = require('../../assets/icons/info.png');
-const AboutSelectedSource = require('../../assets/icons/info-selected.png');
-
 const Tab = createBottomTabNavigator<TabParamList>();
 
 const homeTabOptions: BottomTabNavigationOptions = {
@@ -59,29 +54,8 @@ const dialerTabOptions: BottomTabNavigationOptions = {
   tabBarTestID: 'dialer_button',
 };
 
-const aboutTabOptions: BottomTabNavigationOptions = {
-  tabBarIcon: ({ focused, size }) => {
-    return focused ? (
-      <Image
-        source={AboutSelectedSource}
-        resizeMode="contain"
-        style={{ maxHeight: size }}
-      />
-    ) : (
-      <Image
-        source={AboutSource}
-        resizeMode="contain"
-        style={{ maxHeight: size }}
-      />
-    );
-  },
-};
-
 const TabNavigator: React.FC = () => {
   const bannerProps = useConnectedActiveCallBanner();
-  const isAboutPageEnabled = React.useMemo(() => {
-    return getEnvVariable('ENABLE_ABOUT_PAGE') === 'true';
-  }, []);
   const safeAreaInsets = useSafeAreaInsets();
 
   const screen = React.useMemo(
@@ -97,17 +71,10 @@ const TabNavigator: React.FC = () => {
             component={Dialer}
             options={dialerTabOptions}
           />
-          {isAboutPageEnabled && (
-            <Tab.Screen
-              name="About"
-              component={About}
-              options={aboutTabOptions}
-            />
-          )}
         </Tab.Navigator>
       </View>
     ),
-    [isAboutPageEnabled],
+    [],
   );
 
   return (

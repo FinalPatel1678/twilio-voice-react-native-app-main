@@ -3,8 +3,6 @@ import React from 'react';
 import ActiveCall from './ActiveCall';
 import TabNavigator from './TabNavigator';
 import { type StackParamList } from './types';
-import SignIn from './SignIn';
-import CallInvite from './CallInvite';
 import Busy from '../components/Busy';
 
 const Stack = createNativeStackNavigator<StackParamList>();
@@ -23,8 +21,6 @@ const StackNavigator = () => {
         component={Busy}
       />
       <Stack.Screen name="Call" component={ActiveCall} />
-      <Stack.Screen name="Incoming Call" component={CallInvite} />
-      <Stack.Screen name="Sign In" component={SignIn} />
     </Stack.Navigator>
   );
 };

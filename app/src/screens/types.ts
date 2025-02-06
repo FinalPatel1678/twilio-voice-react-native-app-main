@@ -12,8 +12,6 @@ export type StackParamList = {
   App: { screen: keyof TabParamList };
   Busy: undefined;
   Call: { callSid?: string };
-  'Sign In': undefined;
-  'Incoming Call': undefined;
 };
 
 export type StackScreenProps<T extends keyof StackParamList> =
@@ -22,7 +20,6 @@ export type StackScreenProps<T extends keyof StackParamList> =
 export type TabParamList = {
   Home: undefined;
   Dialer: undefined;
-  About: undefined;
 };
 
 export type TabNavScreenProps<T extends keyof TabParamList> =

@@ -11,7 +11,6 @@ import { match, P } from 'ts-pattern';
 import {
   type CallInfo,
   getCallInfo,
-  type IncomingCall,
   type OutgoingCall,
   type OutgoingCallParameters,
 } from './';
@@ -19,7 +18,6 @@ import { createTypedAsyncThunk, generateThunkActionTypes } from '../../common';
 import { callMap } from '../../../util/voice';
 import { settlePromise } from '../../../util/settlePromise';
 import { makeOutgoingCall } from './outgoingCall';
-import { acceptCallInvite } from './callInvite';
 
 const sliceName = 'activeCall' as const;
 
@@ -250,7 +248,7 @@ export const sendDigitsActiveCall = createTypedAsyncThunk<
 /**
  * Slice configuration.
  */
-export type ActiveCall = OutgoingCall | IncomingCall;
+export type ActiveCall = OutgoingCall;
 export const activeCallAdapter = createEntityAdapter<ActiveCall>();
 export const activeCallSlice = createSlice({
   name: 'activeCall',
@@ -280,23 +278,9 @@ export const activeCallSlice = createSlice({
      */
     builder.addCase(handleCall.fulfilled, (state, action) => {
       const { requestId } = action.meta;
-      const { callInfo, customParameters } = action.payload;
+      const { customParameters } = action.payload;
 
       match([state.entities[requestId], customParameters])
-        .with([undefined, undefined], () => {
-          activeCallAdapter.setOne(state, {
-            direction: 'incoming',
-            id: requestId,
-            status: 'fulfilled',
-            action: {
-              disconnect: { status: 'idle' },
-              hold: { status: 'idle' },
-              mute: { status: 'idle' },
-              sendDigits: { status: 'idle' },
-            },
-            info: callInfo,
-          });
-        })
         .with([undefined, P.not(undefined)], ([_, _customParameters]) => {
           activeCallAdapter.setOne(state, {
             direction: 'outgoing',
@@ -309,7 +293,6 @@ export const activeCallSlice = createSlice({
               sendDigits: { status: 'idle' },
             },
             params: {
-              recipientType: _customParameters.recipientType,
               to: _customParameters.to,
             },
             info: action.payload.callInfo,
@@ -330,7 +313,6 @@ export const activeCallSlice = createSlice({
             direction: 'outgoing',
             id: requestId,
             params: {
-              recipientType: arg.recipientType,
               to: arg.to,
             },
             status: requestStatus,
@@ -345,7 +327,7 @@ export const activeCallSlice = createSlice({
       match(state.entities[requestId])
         .with(
           { direction: 'outgoing', status: 'pending' },
-          ({ direction, params: { recipientType, to } }) => {
+          ({ direction, params: { to } }) => {
             activeCallAdapter.setOne(state, {
               action: {
                 disconnect: { status: 'idle' },
@@ -357,7 +339,6 @@ export const activeCallSlice = createSlice({
               id: requestId,
               info: action.payload,
               params: {
-                recipientType,
                 to,
               },
               status: requestStatus,
@@ -373,76 +354,17 @@ export const activeCallSlice = createSlice({
       match(state.entities[requestId])
         .with(
           { direction: 'outgoing', status: 'pending' },
-          ({ direction, params: { recipientType, to } }) => {
+          ({ direction, params: { to } }) => {
             activeCallAdapter.setOne(state, {
               direction,
               id: requestId,
               params: {
-                recipientType,
                 to,
               },
               status: requestStatus,
             });
           },
         )
-        .otherwise(() => {});
-    });
-
-    /**
-     * Handle accepting a call invite.
-     *
-     * Note that the ID we use here is provided by argument, not the request ID.
-     * This enforces the active call to have the same ID as the call invite.
-     * Since both active calls and call invites are in different state slices,
-     * duplicate IDs do not matter and can help map call invites to active
-     * calls.
-     */
-    builder.addCase(acceptCallInvite.pending, (state, action) => {
-      const { arg, requestStatus } = action.meta;
-
-      match(state.entities[arg.id])
-        .with(undefined, () => {
-          activeCallAdapter.setOne(state, {
-            direction: 'incoming',
-            id: arg.id,
-            status: requestStatus,
-          });
-        })
-        .otherwise(() => {});
-    });
-
-    builder.addCase(acceptCallInvite.fulfilled, (state, action) => {
-      const { arg, requestStatus } = action.meta;
-
-      match(state.entities[arg.id])
-        .with({ direction: 'incoming', status: 'pending' }, ({ direction }) => {
-          activeCallAdapter.setOne(state, {
-            action: {
-              disconnect: { status: 'idle' },
-              hold: { status: 'idle' },
-              mute: { status: 'idle' },
-              sendDigits: { status: 'idle' },
-            },
-            direction,
-            id: arg.id,
-            info: action.payload,
-            status: requestStatus,
-          });
-        })
-        .otherwise(() => {});
-    });
-
-    builder.addCase(acceptCallInvite.rejected, (state, action) => {
-      const { arg, requestStatus } = action.meta;
-
-      match(state.entities[arg.id])
-        .with({ direction: 'incoming', status: 'pending' }, ({ direction }) => {
-          activeCallAdapter.setOne(state, {
-            direction,
-            id: arg.id,
-            status: requestStatus,
-          });
-        })
         .otherwise(() => {});
     });
 

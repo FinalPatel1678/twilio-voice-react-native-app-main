@@ -4,7 +4,7 @@ import {
   type SerializedError,
 } from '@reduxjs/toolkit';
 import { Platform } from 'react-native';
-import { fetch, defaultUrl } from '../../util/fetch';
+import { fetch, defaultUrl, secreteApiKey } from '../../util/fetch';
 import { settlePromise } from '../../util/settlePromise';
 import { type AsyncStoreSlice } from '../app';
 import { createTypedAsyncThunk } from '../common';
@@ -33,23 +33,16 @@ export const getAccessToken = createTypedAsyncThunk<
   {
     rejectValue: GetAccessTokenRejectValue;
   }
->('voice/getAccessToken', async (_, { getState, rejectWithValue }) => {
-  const user = getState().user;
-  if (user?.status !== 'fulfilled') {
-    return rejectWithValue({
-      reason: 'USER_NOT_FULFILLED',
-    });
-  }
-
+>('voice/getAccessToken', async (_, { rejectWithValue }) => {
   const fetchResult = await settlePromise(
-    fetch(`${defaultUrl}/token`, {
+    fetch(`${defaultUrl}/access-token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${user.accessToken}`,
       },
       body: JSON.stringify({
         platform: Platform.OS,
+        api_key: secreteApiKey,
       }),
     }),
   );

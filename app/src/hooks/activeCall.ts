@@ -94,10 +94,6 @@ export const useActiveCallRemoteParticipant = (
   const remoteParticipantId = React.useMemo<string>(
     () =>
       match(activeCall)
-        .with(
-          { direction: 'incoming', status: 'fulfilled' },
-          (c) => c.info.from || '',
-        )
         .with({ direction: 'outgoing' }, (c) => c.params.to)
         .otherwise(() => ''),
     [activeCall],

@@ -1,38 +1,20 @@
 import React from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { type RecipientType } from '../../store/voice/call';
+import { StyleSheet, Text, View } from 'react-native';
 
 export type Props = {
   outgoingNumber: string;
-  outgoingIdentity: string;
-  recipientType: RecipientType;
-  setOutgoingIdentity: (id: string) => void;
 };
 
-const OutgoingRemoteParticipant: React.FC<Props> = ({
-  outgoingNumber,
-  outgoingIdentity,
-  recipientType,
-  setOutgoingIdentity,
-}) => {
+const OutgoingRemoteParticipant: React.FC<Props> = ({ outgoingNumber }) => {
   const formattedNumber = React.useMemo(() => {
     return outgoingNumber.length > 0 ? `+${outgoingNumber}` : '';
   }, [outgoingNumber]);
   return (
     <View style={styles.container}>
-      {recipientType === 'client' ? (
-        <TextInput
-          autoFocus={true}
-          defaultValue={outgoingIdentity}
-          onChangeText={setOutgoingIdentity}
-          style={styles.title}
-          testID="client_text_input"
-        />
-      ) : (
-        <Text style={numberStyle} testID="formatted_number">
-          {formattedNumber}
-        </Text>
-      )}
+      <Text style={numberStyle} testID="formatted_number">
+        {formattedNumber}
+      </Text>
+
       <Text style={styles.subtitle} />
     </View>
   );

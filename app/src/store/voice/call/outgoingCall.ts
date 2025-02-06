@@ -4,7 +4,7 @@ import { Call as TwilioCall } from '@twilio/voice-react-native-sdk';
 import { voice, callMap } from '../../../util/voice';
 import { settlePromise } from '../../../util/settlePromise';
 import { createTypedAsyncThunk, generateThunkActionTypes } from '../../common';
-import { type CallInfo, getCallInfo, type RecipientType } from './';
+import { type CallInfo, getCallInfo } from './';
 import { setActiveCallInfo } from './activeCall';
 
 export type MakeOutgoingCallRejectValue =
@@ -19,14 +19,11 @@ export const makeOutgoingCallActionTypes =
   generateThunkActionTypes('call/makeOutgoing');
 export const makeOutgoingCall = createTypedAsyncThunk<
   CallInfo,
-  { recipientType: RecipientType; to: string },
+  { to: string },
   { rejectValue: MakeOutgoingCallRejectValue }
 >(
   makeOutgoingCallActionTypes.prefix,
-  async (
-    { to, recipientType },
-    { getState, dispatch, rejectWithValue, requestId },
-  ) => {
+  async ({ to }, { getState, dispatch, rejectWithValue, requestId }) => {
     const token = getState().voice.accessToken;
     if (token?.status !== 'fulfilled') {
       return rejectWithValue({ reason: 'TOKEN_UNFULFILLED' });
@@ -36,7 +33,6 @@ export const makeOutgoingCall = createTypedAsyncThunk<
       voice.connect(token.value, {
         params: {
           To: to,
-          recipientType,
         },
       }),
     );
@@ -84,7 +80,7 @@ export const makeOutgoingCall = createTypedAsyncThunk<
       if (typeof callSid !== 'string') {
         return;
       }
-      AsyncStorage.setItem(callSid, JSON.stringify({ to, recipientType }));
+      AsyncStorage.setItem(callSid, JSON.stringify({ to }));
 
       const info = getCallInfo(outgoingCall);
       if (typeof info.initialConnectedTimestamp === 'undefined') {
