@@ -25,7 +25,9 @@ export const useActiveCall = (callSid?: string): ActiveCall | undefined => {
       store.voice.call.activeCall;
 
     if (typeof callSid === 'undefined') {
-      return callEntities[callIds[callIds.length - 1]];
+      const mostRecentCall = callEntities[callIds[callIds.length - 1]];
+      console.log('Most recent active call:', mostRecentCall);
+      return mostRecentCall;
     }
 
     const foundCallEntity = Object.values(callEntities).find((callEntity) => {
@@ -36,6 +38,7 @@ export const useActiveCall = (callSid?: string): ActiveCall | undefined => {
       return callEntity.info.sid === callSid;
     });
 
+    console.log('Found active call by callSid:', foundCallEntity);
     return foundCallEntity;
   });
 
@@ -70,10 +73,13 @@ export const useActiveCallDuration = (
             const minutes = String(totalMinutes).padStart(2, '0');
             const seconds = String(remainderSeconds).padStart(2, '0');
 
-            return `${minutes}:${seconds}`;
+            const formattedTime = `${minutes}:${seconds}`;
+            console.log('Active call connected time:', formattedTime);
+            return formattedTime;
           },
         )
         .with([{ info: { state: P.select(P.string) } }, P._], (callState) => {
+          console.log('Active call state:', callState);
           return callState;
         })
         .otherwise(() => ''),
@@ -94,7 +100,10 @@ export const useActiveCallRemoteParticipant = (
   const remoteParticipantId = React.useMemo<string>(
     () =>
       match(activeCall)
-        .with({ direction: 'outgoing' }, (c) => c.params.to)
+        .with({ direction: 'outgoing' }, (c) => {
+          console.log('Outgoing call to:', c.params.to);
+          return c.params.to;
+        })
         .otherwise(() => ''),
     [activeCall],
   );
@@ -135,9 +144,9 @@ export const useActiveCallTime = (
               },
             },
             (c) => {
-              setActiveCallTimeMs(
-                Date.now() - c.info.initialConnectedTimestamp,
-              );
+              const timeElapsed = Date.now() - c.info.initialConnectedTimestamp;
+              console.log('Active call time elapsed:', timeElapsed);
+              setActiveCallTimeMs(timeElapsed);
               if (!doneAnimating) {
                 timeoutId = setTimeout(animate, timeIntervalUpdatesMs);
               }

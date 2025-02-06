@@ -39,6 +39,7 @@ const useDialpad = (
       match<typeof activeCall, [(s: string) => void, boolean]>(activeCall)
         .with({ info: { state: 'connected' } }, (c) => [
           (dialpadInput: string) => {
+            console.log('Sending digits:', dialpadInput);
             dispatch(sendDigitsActiveCall({ id: c.id, digits: dialpadInput }));
           },
           false,
@@ -67,6 +68,7 @@ const useMute = (
           const isMuted = Boolean(c.info.isMuted);
           return [
             () => {
+              console.log('Toggling mute:', !isMuted);
               dispatch(muteActiveCall({ id: c.id, shouldMute: !isMuted }));
             },
             false,
@@ -95,6 +97,7 @@ const useHangup = (
       match<typeof activeCall, [() => void, boolean]>(activeCall)
         .with({ info: { state: P.not('disconnected') } }, (c) => [
           () => {
+            console.log('Disconnecting call with id:', c.id);
             dispatch(disconnectActiveCall({ id: c.id }));
           },
           false,
@@ -140,8 +143,10 @@ const useAudio = (
         return;
       }
 
-      return () =>
+      return () => {
+        console.log('Selecting audio device:', device);
         dispatch(selectAudioDevice({ audioDeviceUuid: device.uuid }));
+      };
     },
     [audioDevices, dispatch],
   );
@@ -198,6 +203,13 @@ const useActiveCallScreen = (callSid?: string) => {
   const activeCall = useActiveCall(callSid);
   const remoteParticipant = useActiveCallRemoteParticipant(activeCall);
   const callStatus = useActiveCallDuration(activeCall);
+
+  console.log('Active call screen state:', {
+    activeCall,
+    remoteParticipant,
+    callStatus,
+    audioDevices,
+  });
 
   /**
    * Refresh the list of audio devices when the call screen is mounted.

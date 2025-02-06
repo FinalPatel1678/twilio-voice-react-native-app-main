@@ -48,7 +48,7 @@ exports.handler = function (context, event, callback) {
         // Return the token and identity in the response
         const response = new Response();
         response.appendHeader('Content-Type', 'application/json');
-        response.setBody({ token: token.toJwt(), identity });
+        response.setBody({ token: token.toJwt() });
 
         return callback(null, response);
     } catch (error) {

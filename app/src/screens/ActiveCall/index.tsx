@@ -16,12 +16,22 @@ export type Props = StackScreenProps<'Call'>;
 
 const ActiveCall: React.FC<Props> = (props) => {
   const callSid = props.route.params?.callSid;
+  console.log('ActiveCall component mounted with callSid:', callSid);
 
   const {
     button: { dialpad, hangup, mute, audio },
     callStatus,
     remoteParticipant,
   } = useActiveCallScreen(callSid);
+
+  console.log('ActiveCall screen state:', {
+    dialpad,
+    hangup,
+    mute,
+    audio,
+    callStatus,
+    remoteParticipant,
+  });
 
   const dialpadView = React.useMemo(
     () => (
