@@ -7,6 +7,7 @@ import { updateAudioDevices } from './voice/audioDevices';
 import { getNavigate } from '../util/navigation';
 import { settlePromise } from '../util/settlePromise';
 import { voice } from '../util/voice';
+import { getPhoneNumbers } from './voice/phoneNumbers';
 
 /**
  * Bootstrap calls. Retrieves all existing calls.
@@ -110,5 +111,18 @@ export const bootstrapAudioDevices = createTypedAsyncThunk(
     };
 
     voice.on(Voice.Event.AudioDevicesUpdated, handleAudioDevicesUpdated);
+  },
+);
+
+/**
+ * Bootstrap phone numbers.
+ */
+export const bootstrapPhoneNumbersActionTypes = generateThunkActionTypes(
+  'bootstrap/phoneNumbers',
+);
+export const bootstrapPhoneNumbers = createTypedAsyncThunk(
+  bootstrapPhoneNumbersActionTypes.prefix,
+  async (_, { dispatch }) => {
+    await dispatch(getPhoneNumbers());
   },
 );
