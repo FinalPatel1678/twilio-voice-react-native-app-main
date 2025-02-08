@@ -1,7 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, Image } from 'react-native';
-
-const TwilioLogo = require('../../../assets/icons/twilio-logo.png');
+import { StyleSheet, Text, View } from 'react-native';
 
 const styles = StyleSheet.create({
   container: {
@@ -32,9 +30,6 @@ const styles = StyleSheet.create({
 const Home: React.FC = () => {
   return (
     <View style={styles.container}>
-      <View style={styles.logoContainer}>
-        <Image style={styles.logo} source={TwilioLogo} resizeMode="contain" />
-      </View>
       <View style={styles.body}>
         <Text>Ahoy!</Text>
       </View>

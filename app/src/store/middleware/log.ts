@@ -33,9 +33,6 @@ export const createLogMiddleware: (
     return next(action);
   };
 
-/**
- * Recursively filter out a key from an object.
- */
 const filterOutKey = (
   key: string,
   obj: Record<string, any>,
