@@ -1,18 +1,24 @@
 import { configureStore, type Middleware } from '@reduxjs/toolkit';
 import { voiceReducer } from './voice';
 import { createLogMiddleware } from './middleware/log';
+import { bootstrapPhoneNumbersAndToken } from './bootstrap';
 
 export const defaultReducer = {
   voice: voiceReducer,
 };
 
-export const createStore = (...middlewares: Middleware[]) =>
-  configureStore({
+export const createStore = (...middlewares: Middleware[]) => {
+  const store = configureStore({
     reducer: defaultReducer,
     middleware(getDefaultMiddleware) {
       return getDefaultMiddleware().concat(...middlewares);
     },
   });
+
+  store.dispatch(bootstrapPhoneNumbersAndToken());
+
+  return store;
+};
 
 export const defaultStore = createStore(createLogMiddleware());
 

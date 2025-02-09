@@ -15,10 +15,10 @@ exports.handler = async function (context, event, callback) {
     const client = twilio(context.ACCOUNT_SID, context.AUTH_TOKEN);
 
     try {
-        const phoneNumbers = await client.incomingPhoneNumbers.list({ status: 'active' });
+        const incomingPhoneNumbers = await client.incomingPhoneNumbers.list({ status: 'active' });
 
         response.appendHeader('Content-Type', 'application/json');
-        response.setBody({ phoneNumbers });
+        response.setBody({ phoneNumbers: incomingPhoneNumbers.map((incomingPhoneNumber) => incomingPhoneNumber.phoneNumber) });
 
         return callback(null, response);
     } catch (error) {

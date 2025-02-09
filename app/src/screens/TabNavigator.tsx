@@ -3,12 +3,13 @@ import {
   type BottomTabNavigationOptions,
 } from '@react-navigation/bottom-tabs';
 import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ActiveCallBanner from '../components/ActiveCallBanner';
 import { useConnectedActiveCallBanner } from '../components/ActiveCallBanner/hooks';
 import Home from './Home';
 import Dialer from './Dialer';
+import UploadCSV from './UploadCSV';
 import { type TabParamList } from './types';
 
 const HomeSource = require('../../assets/icons/home.png');
@@ -54,6 +55,8 @@ const dialerTabOptions: BottomTabNavigationOptions = {
   tabBarTestID: 'dialer_button',
 };
 
+const CSVTabIcon: React.FC = () => <Text>CSV</Text>;
+
 const TabNavigator: React.FC = () => {
   const bannerProps = useConnectedActiveCallBanner();
   const safeAreaInsets = useSafeAreaInsets();
@@ -70,6 +73,11 @@ const TabNavigator: React.FC = () => {
             name="Dialer"
             component={Dialer}
             options={dialerTabOptions}
+          />
+          <Tab.Screen
+            name="Auto Dialer"
+            component={UploadCSV}
+            options={{ tabBarIcon: CSVTabIcon }}
           />
         </Tab.Navigator>
       </View>

@@ -24,21 +24,32 @@ export const makeOutgoingCall = createTypedAsyncThunk<
 >(
   makeOutgoingCallActionTypes.prefix,
   async ({ to }, { getState, dispatch, rejectWithValue, requestId }) => {
-    console.log('makeOutgoingCall: started', { to, requestId });
+    console.log('makeOutgoingCall: started', { requestId });
 
-    const token = getState().voice.accessToken;
+    const state = getState();
+    const token = state.voice.accessToken;
+    const phoneNumbers = state.voice.phoneNumbers.phoneNumbers;
+
     if (token?.status !== 'fulfilled') {
       console.error('makeOutgoingCall: token unfulfilled');
       return rejectWithValue({ reason: 'TOKEN_UNFULFILLED' });
     }
 
-    console.log('makeOutgoingCall: token fulfilled', { token: token.value });
+    if (!phoneNumbers || phoneNumbers.length === 0) {
+      console.error('makeOutgoingCall: no phone numbers available');
+      return rejectWithValue({ reason: 'PHONE_NUMBERS_UNAVAILABLE' });
+    }
+
+    const Caller_Id =
+      phoneNumbers[Math.floor(Math.random() * phoneNumbers.length)];
+    console.log('makeOutgoingCall: calling to', { to, Caller_Id });
 
     try {
       const outgoingCallResult = await settlePromise(
         voice.connect(token.value, {
           params: {
             To: to,
+            Caller_Id: Caller_Id,
           },
         }),
       );

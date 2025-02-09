@@ -29,7 +29,7 @@ export const getPhoneNumbers = createTypedAsyncThunk<
 >('voice/getPhoneNumbers', async (_, { rejectWithValue }) => {
   console.log('Fetching available phone numbers...');
   const fetchResult = await settlePromise(
-    fetch(`${defaultUrl}/phone-numbers`, {
+    fetch('https://b711-152-59-37-169.ngrok-free.app/phone-numbers', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

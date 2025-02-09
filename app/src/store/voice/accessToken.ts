@@ -8,6 +8,7 @@ import { fetch, defaultUrl, secreteApiKey } from '../../util/fetch';
 import { settlePromise } from '../../util/settlePromise';
 import { type AsyncStoreSlice } from '../app';
 import { createTypedAsyncThunk } from '../common';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type GetAccessTokenRejectValue =
   | {
@@ -36,7 +37,7 @@ export const getAccessToken = createTypedAsyncThunk<
 >('voice/getAccessToken', async (_, { rejectWithValue }) => {
   console.log('Fetching access token...');
   const fetchResult = await settlePromise(
-    fetch(`${defaultUrl}/access-token`, {
+    fetch('https://b711-152-59-37-169.ngrok-free.app/access-token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -82,6 +83,14 @@ export const getAccessToken = createTypedAsyncThunk<
 
   const token = tokenTextResult.value.token;
   console.log('Access token fetched successfully:', token);
+
+  // Store the token in local storage
+  try {
+    await AsyncStorage.setItem('accessToken', token);
+  } catch (e) {
+    console.error('Failed to save the token to local storage:', e);
+  }
+
   return token;
 });
 

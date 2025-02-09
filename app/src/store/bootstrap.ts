@@ -8,6 +8,7 @@ import { getNavigate } from '../util/navigation';
 import { settlePromise } from '../util/settlePromise';
 import { voice } from '../util/voice';
 import { getPhoneNumbers } from './voice/phoneNumbers';
+import { getAccessToken } from './voice/accessToken';
 
 /**
  * Bootstrap calls. Retrieves all existing calls.
@@ -123,6 +124,19 @@ export const bootstrapPhoneNumbersActionTypes = generateThunkActionTypes(
 export const bootstrapPhoneNumbers = createTypedAsyncThunk(
   bootstrapPhoneNumbersActionTypes.prefix,
   async (_, { dispatch }) => {
+    await dispatch(getPhoneNumbers());
+  },
+);
+
+/**
+ * Bootstrap phone numbers and access token.
+ */
+export const bootstrapPhoneNumbersAndTokenActionTypes =
+  generateThunkActionTypes('bootstrap/phoneNumbersAndToken');
+export const bootstrapPhoneNumbersAndToken = createTypedAsyncThunk(
+  bootstrapPhoneNumbersAndTokenActionTypes.prefix,
+  async (_, { dispatch }) => {
+    await dispatch(getAccessToken());
     await dispatch(getPhoneNumbers());
   },
 );
