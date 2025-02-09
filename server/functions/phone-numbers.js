@@ -18,7 +18,7 @@ exports.handler = async function (context, event, callback) {
         const phoneNumbers = await client.incomingPhoneNumbers.list({ status: 'active' });
 
         response.appendHeader('Content-Type', 'application/json');
-        response.setBody(phoneNumbers);
+        response.setBody({ phoneNumbers });
 
         return callback(null, response);
     } catch (error) {
