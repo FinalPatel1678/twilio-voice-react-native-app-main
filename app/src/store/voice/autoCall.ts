@@ -1,6 +1,5 @@
 import { createTypedAsyncThunk, generateThunkActionTypes } from '../common';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { makeOutgoingCall } from './call/outgoingCall';
 
 export const startAutoCallingActionTypes =
   generateThunkActionTypes('autoCall/start');
@@ -10,64 +9,6 @@ export const resumeAutoCallingActionTypes =
   generateThunkActionTypes('autoCall/resume');
 export const resetAutoCallingActionTypes =
   generateThunkActionTypes('autoCall/reset');
-
-export const startAutoCalling = createTypedAsyncThunk<
-  void,
-  { phoneNumbers: string[]; delay: number }
->(
-  startAutoCallingActionTypes.prefix,
-  async ({ phoneNumbers, delay }, { dispatch, getState }) => {
-    const waitForCallEnd = () =>
-      new Promise((resolve) => {
-        const interval = setInterval(() => {
-          const currentState = getState();
-          const hasActiveCall = Boolean(
-            currentState.voice.call.activeCall.ids.length,
-          );
-          if (!hasActiveCall) {
-            clearInterval(interval);
-            resolve(null);
-          }
-        }, 1000); // Check every second
-      });
-
-    for (const number of phoneNumbers) {
-      const state = getState();
-
-      // Check if dialer is paused
-      if (state.voice.autoCall.dialerStatus === 'paused') {
-        await new Promise((resolve) => {
-          const interval = setInterval(() => {
-            const currentState = getState();
-            if (currentState.voice.autoCall.dialerStatus !== 'paused') {
-              clearInterval(interval);
-              resolve(null);
-            }
-          }, 1000);
-        });
-      }
-
-      try {
-        // Wait for any existing call to finish before starting new call
-        await waitForCallEnd();
-
-        // Set current number being called
-        dispatch(autoCallSlice.actions.setCurrentPhoneNumber(number));
-
-        // Make the call
-        await dispatch(makeOutgoingCall({ to: number })).unwrap();
-
-        // Wait for this call to complete
-        await waitForCallEnd();
-
-        // Add delay between calls
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      } catch (error) {
-        console.error(`Failed to call ${number}:`, error);
-      }
-    }
-  },
-);
 
 export const pauseAutoCalling = createTypedAsyncThunk<void, void>(
   pauseAutoCallingActionTypes.prefix,
@@ -125,22 +66,6 @@ export const autoCallSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(startAutoCalling.pending, (state) => {
-      state.status = 'pending';
-      state.dialerStatus = 'running';
-    });
-    builder.addCase(startAutoCalling.fulfilled, (state) => {
-      state.status = 'fulfilled';
-      state.dialerStatus = 'idle';
-      state.currentPhoneNumber = undefined;
-    });
-    builder.addCase(
-      startAutoCalling.rejected,
-      (state, action: PayloadAction<any>) => {
-        state.status = 'rejected';
-        state.error = action.error.message;
-      },
-    );
     builder.addCase(pauseAutoCalling.pending, (state) => {
       state.status = 'pending';
     });

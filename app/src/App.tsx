@@ -8,7 +8,6 @@ import {
   bootstrapAudioDevices,
   bootstrapCalls,
   bootstrapNavigation,
-  bootstrapPhoneNumbers,
 } from './store/bootstrap';
 import { navigationRef } from './util/navigation';
 
@@ -29,7 +28,6 @@ const App = () => {
       await defaultStore.dispatch(bootstrapAudioDevices());
       await defaultStore.dispatch(bootstrapCalls());
       await defaultStore.dispatch(bootstrapNavigation());
-      await defaultStore.dispatch(bootstrapPhoneNumbers());
     };
 
     bootstrap();

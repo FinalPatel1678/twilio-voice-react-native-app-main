@@ -1,3 +1,4 @@
+import { Call as TwilioCall } from '@twilio/voice-react-native-sdk';
 import React, { useState, useEffect } from 'react';
 import {
   TouchableOpacity,
@@ -8,61 +9,157 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  Animated,
 } from 'react-native';
+import { match } from 'ts-pattern';
 import { pick, types } from '@react-native-documents/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { parse } from 'papaparse';
-import { useDispatch, useSelector } from 'react-redux';
-import {
-  startAutoCalling,
-  pauseAutoCalling,
-  resumeAutoCalling,
-  resetAutoCalling,
-} from '../store/voice/autoCall';
+import { useActiveCall } from '../hooks/activeCall';
+import { makeOutgoingCall } from '../store/voice/call/outgoingCall';
 import PhoneNumberItem from '../components/PhoneNumberItem';
-import { State } from '../store/app';
+import { useDispatch } from 'react-redux';
+import { colors } from '../theme/colors';
 
 const isValidPhoneNumber = (number: string) => {
   const phoneRegex = /^\+?[1-9]\d{1,14}$/;
   return phoneRegex.test(number.replace(/[\s-()]/g, ''));
 };
 
-const UploadCSV: React.FC = () => {
+const AutoDialer: React.FC = () => {
   const [fileName, setFileName] = useState<string | null>(null);
   const [delay, setDelay] = useState<number>(1000);
   const [parsedPhoneNumbers, setParsedPhoneNumbers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [dialerStatus, setDialerStatus] = useState<
+    'idle' | 'running' | 'paused'
+  >('idle');
+  const [currentPhoneNumber, setCurrentPhoneNumber] = useState<string | null>(
+    null,
+  );
 
+  const activeCall = useActiveCall();
   const dispatch = useDispatch();
-  const { currentPhoneNumber, dialerStatus } = useSelector(
-    (state: State) => state.voice.autoCall,
+
+  const fadeAnim = useState(new Animated.Value(1))[0];
+  const progressValue = useState(new Animated.Value(0))[0];
+
+  const isCallActive = React.useMemo(
+    () =>
+      match(activeCall)
+        .with({ status: 'pending' }, () => true)
+        .with(
+          { status: 'fulfilled' },
+          (c) => c.info.state !== TwilioCall.State.Disconnected,
+        )
+        .otherwise(() => false),
+    [activeCall],
   );
 
   useEffect(() => {
-    const loadPreviousFile = async () => {
+    if (!isCallActive && dialerStatus === 'running') {
+      makeNextCall();
+    }
+  }, [isCallActive, dialerStatus]);
+
+  const animateStatusChange = () => {
+    Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 0.3,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const makeNextCall = async () => {
+    if (currentIndex >= parsedPhoneNumbers.length) {
+      setDialerStatus('idle');
+      setCurrentPhoneNumber(null);
+      return;
+    }
+
+    if (dialerStatus !== 'running') {
+      return;
+    }
+
+    const nextNumber = parsedPhoneNumbers[currentIndex];
+    setCurrentPhoneNumber(nextNumber);
+    try {
+      await dispatch(makeOutgoingCall({ to: nextNumber }));
+      setCurrentIndex((prev) => prev + 1);
+    } catch (error) {
+      console.error(`Failed to call ${nextNumber}:`, error);
+      setCurrentIndex((prev) => prev + 1);
+      makeNextCall();
+    }
+
+    Animated.timing(progressValue, {
+      toValue: currentIndex / parsedPhoneNumbers.length,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+    animateStatusChange();
+  };
+
+  useEffect(() => {
+    const loadState = async () => {
       try {
-        const file = await AsyncStorage.getItem('previousFile');
-        console.log('Loaded previous file data:', file);
-        if (file) {
-          const parsedFile = JSON.parse(file);
-          console.log('Parsed file data:', parsedFile);
+        const [fileData, dialerData] = await Promise.all([
+          AsyncStorage.getItem('previousFile'),
+          AsyncStorage.getItem('dialerState'),
+        ]);
+
+        if (fileData) {
+          const parsedFile = JSON.parse(fileData);
           setFileName(parsedFile.fileName);
           setParsedPhoneNumbers(parsedFile.phoneNumbers);
         }
+
+        if (dialerData) {
+          const parsedDialerState = JSON.parse(dialerData);
+          setDialerStatus(parsedDialerState.status);
+          setCurrentIndex(parsedDialerState.currentIndex);
+          setDelay(parsedDialerState.delay);
+          setCurrentPhoneNumber(parsedDialerState.currentPhoneNumber);
+        }
       } catch (error) {
-        console.error('Error loading previous file:', error);
-        setErrorMessage('Failed to load previous file');
+        console.error('Error loading state:', error);
+        setErrorMessage('Failed to load previous state');
       }
     };
-    loadPreviousFile();
+    loadState();
   }, []);
+
+  useEffect(() => {
+    const saveDialerState = async () => {
+      try {
+        const dialerState = {
+          status: dialerStatus,
+          currentIndex,
+          delay,
+          currentPhoneNumber,
+        };
+        await AsyncStorage.setItem('dialerState', JSON.stringify(dialerState));
+      } catch (error) {
+        console.error('Error saving dialer state:', error);
+      }
+    };
+    saveDialerState();
+  }, [dialerStatus, currentIndex, delay, currentPhoneNumber]);
 
   const handleFilePick = async () => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      dispatch(resetAutoCalling());
+      setDialerStatus('idle');
 
       const res = await pick({
         type: [types.csv],
@@ -75,8 +172,6 @@ const UploadCSV: React.FC = () => {
 
       const selectedFileName = res[0].name;
       const fileUri = res[0].uri;
-
-      console.log('Selected file:', selectedFileName, fileUri);
 
       const response = await fetch(fileUri);
       const fileContent = await response.text();
@@ -109,7 +204,6 @@ const UploadCSV: React.FC = () => {
         phoneNumbers,
       };
 
-      console.log('Storing file data:', fileData);
       await AsyncStorage.setItem('previousFile', JSON.stringify(fileData));
 
       setParsedPhoneNumbers(phoneNumbers);
@@ -129,12 +223,17 @@ const UploadCSV: React.FC = () => {
 
   const clearStoredFile = async () => {
     try {
-      await AsyncStorage.removeItem('previousFile');
+      await Promise.all([
+        AsyncStorage.removeItem('previousFile'),
+        AsyncStorage.removeItem('dialerState'),
+      ]);
       setFileName(null);
       setParsedPhoneNumbers([]);
-      dispatch(resetAutoCalling());
+      setDialerStatus('idle');
+      setCurrentIndex(0);
+      setCurrentPhoneNumber(null);
     } catch (err) {
-      console.error('Error clearing file:', err);
+      console.error('Error clearing state:', err);
     }
   };
 
@@ -157,19 +256,23 @@ const UploadCSV: React.FC = () => {
   };
 
   const handleStartAutoDialing = () => {
-    dispatch(startAutoCalling({ phoneNumbers: parsedPhoneNumbers, delay }));
+    setCurrentIndex(0);
+    setDialerStatus('running');
+    makeNextCall();
   };
 
   const handlePauseAutoDialing = () => {
-    dispatch(pauseAutoCalling());
+    setDialerStatus('paused');
   };
 
   const handleResumeAutoDialing = () => {
-    dispatch(resumeAutoCalling());
+    setDialerStatus('running');
   };
 
   const handleStopAutoDialing = () => {
-    dispatch(resetAutoCalling());
+    setCurrentIndex(0);
+    setDialerStatus('idle');
+    setCurrentPhoneNumber(null);
   };
 
   const handleDelayChange = (text: string) => {
@@ -197,6 +300,19 @@ const UploadCSV: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.card}>
+        {dialerStatus !== 'idle' && (
+          <Animated.View
+            style={[
+              styles.progressBar,
+              {
+                width: progressValue.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0%', '100%'],
+                }),
+              },
+            ]}
+          />
+        )}
         <View style={styles.uploadSection}>
           <View style={styles.fileActions}>
             <TouchableOpacity
@@ -229,9 +345,10 @@ const UploadCSV: React.FC = () => {
 
         <View style={styles.controls}>
           <View style={styles.delayRow}>
+            <Text style={styles.delayLabel}>Delay (ms):</Text>
             <TextInput
               style={styles.input}
-              placeholder="Delay (ms)"
+              placeholder="1000"
               keyboardType="numeric"
               value={delay.toString()}
               onChangeText={handleDelayChange}
@@ -239,10 +356,15 @@ const UploadCSV: React.FC = () => {
           </View>
 
           <View style={styles.buttonRow}>
-            {dialerStatus === 'idle' && parsedPhoneNumbers.length > 0 && (
+            {dialerStatus === 'idle' && (
               <TouchableOpacity
                 style={[styles.button, styles.actionButton]}
-                onPress={handleStartAutoDialing}>
+                onPress={handleStartAutoDialing}
+                disabled={
+                  dialerStatus !== 'idle' ||
+                  parsedPhoneNumbers.length <= 0 ||
+                  isCallActive
+                }>
                 <Text style={styles.buttonText}>Start Auto Dialer</Text>
               </TouchableOpacity>
             )}
@@ -272,11 +394,16 @@ const UploadCSV: React.FC = () => {
           </View>
         </View>
 
-        {currentPhoneNumber && (
-          <View style={styles.statusBar}>
-            <Text style={styles.statusText}>Calling: {currentPhoneNumber}</Text>
-          </View>
-        )}
+        <Animated.View style={[styles.statusBar, { opacity: fadeAnim }]}>
+          {currentPhoneNumber ? (
+            <Text style={styles.statusText}>
+              Calling: {currentPhoneNumber} ({currentIndex + 1}/
+              {parsedPhoneNumbers.length})
+            </Text>
+          ) : (
+            <Text style={styles.statusText}>Ready to start</Text>
+          )}
+        </Animated.View>
       </View>
 
       <FlatList
@@ -303,105 +430,131 @@ const UploadCSV: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.background,
     padding: 12,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
+    backgroundColor: colors.surface,
+    borderRadius: 2,
+    padding: 6,
+    marginBottom: 10,
+    shadowColor: colors.neutral[900],
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 6,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: 3,
+    backgroundColor: colors.progressBar.background,
   },
   uploadSection: {
-    marginBottom: 16,
+    marginBottom: 8,
   },
   button: {
-    padding: 12,
+    padding: 8,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   uploadButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.button.primary,
+    paddingVertical: 10,
+    borderRadius: 10,
+    elevation: 2,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 15,
+    color: colors.text.inverse,
+    fontSize: 14,
     fontWeight: '600',
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 13,
-    color: '#666',
-    marginTop: 8,
+    fontSize: 12,
+    color: colors.neutral[600],
+    marginTop: 4,
   },
   error: {
-    color: '#dc3545',
-    fontSize: 13,
-    marginTop: 8,
+    color: colors.danger,
+    fontSize: 12,
+    marginTop: 4,
   },
   controls: {
-    gap: 12,
+    gap: 8,
   },
   delayRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  delayLabel: {
+    fontSize: 14,
+    color: colors.neutral[900],
   },
   input: {
     flex: 1,
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#dee2e6',
+    height: 38,
+        borderWidth: 1,
+    borderColor: colors.neutral[300],
     borderRadius: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 10,
+    fontSize: 14,
+    color: colors.neutral[900],
+    backgroundColor: colors.neutral[100],
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   actionButton: {
     flex: 1,
-    backgroundColor: '#6c757d',
+    backgroundColor: colors.button.secondary,
+    paddingVertical: 10,
+    borderRadius: 10,
+    elevation: 2,
   },
   statusBar: {
-    marginTop: 12,
+    marginTop: 10,
     padding: 8,
-    backgroundColor: '#e9ecef',
-    borderRadius: 6,
+    backgroundColor: colors.activeCall.background,
+    borderRadius: 10,
   },
   statusText: {
-    fontSize: 13,
-    color: '#495057',
+    fontSize: 14,
+    color: colors.neutral[700],
+    fontWeight: '500',
+    textAlign: 'center',
   },
   list: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    padding: 8,
   },
   emptyText: {
     textAlign: 'center',
-    color: '#6c757d',
-    fontSize: 15,
-    padding: 20,
+    color: colors.neutral[600],
+    fontSize: 14,
+    padding: 14,
   },
   fileActions: {
     flexDirection: 'row',
     gap: 8,
   },
   removeButton: {
-    backgroundColor: '#dc3545',
+    backgroundColor: colors.button.danger,
   },
   stopButton: {
     flex: 1,
-    backgroundColor: '#dc3545',
+    backgroundColor: colors.button.danger,
   },
 });
 
-export default UploadCSV;
+export default AutoDialer;

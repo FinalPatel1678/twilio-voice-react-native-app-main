@@ -40,15 +40,16 @@ export const getAccessToken = createTypedAsyncThunk<
     fetch(
       'https://68f9-2409-4080-8d89-cb36-ed9c-f3e6-5148-7c98.ngrok-free.app/access-token',
       {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          platform: Platform.OS,
+          api_key: secreteApiKey,
+        }),
       },
-      body: JSON.stringify({
-        platform: Platform.OS,
-        api_key: secreteApiKey,
-      }),
-    }),
+    ),
   );
   if (fetchResult.status === 'rejected') {
     console.error('Fetch error:', fetchResult.reason);

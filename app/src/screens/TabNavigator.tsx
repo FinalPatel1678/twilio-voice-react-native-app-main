@@ -7,9 +7,8 @@ import { Image, StyleSheet, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ActiveCallBanner from '../components/ActiveCallBanner';
 import { useConnectedActiveCallBanner } from '../components/ActiveCallBanner/hooks';
-import Home from './Home';
 import Dialer from './Dialer';
-import UploadCSV from './UploadCSV';
+import AutoDialer from './AutoDialer';
 import { type TabParamList } from './types';
 
 const HomeSource = require('../../assets/icons/home.png');
@@ -69,7 +68,7 @@ const TabNavigator: React.FC = () => {
           }}>
           <Tab.Screen
             name="Auto Dialer"
-            component={UploadCSV}
+            component={AutoDialer}
             options={homeTabOptions}
           />
           <Tab.Screen
