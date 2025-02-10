@@ -1,24 +1,23 @@
 import React from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
-type PhoneNumberItemProps = {
+interface PhoneNumberItemProps {
   phoneNumber: string;
   isCurrent: boolean;
-  onCall: () => void;
-  onSkip: () => void;
-};
+  onRemove: () => void;
+}
 
 const PhoneNumberItem: React.FC<PhoneNumberItemProps> = ({
   phoneNumber,
   isCurrent,
-  onCall,
-  onSkip,
+  onRemove,
 }) => {
   return (
-    <View style={[styles.container, isCurrent && styles.current]}>
+    <View style={[styles.container, isCurrent && styles.currentItem]}>
       <Text style={styles.phoneNumber}>{phoneNumber}</Text>
-      <Button title="Call" onPress={onCall} />
-      <Button title="Skip" onPress={onSkip} />
+      <TouchableOpacity style={styles.removeButton} onPress={onRemove}>
+        <Text style={styles.removeButtonText}>×</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -26,20 +25,26 @@ const PhoneNumberItem: React.FC<PhoneNumberItemProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#dee2e6',
     alignItems: 'center',
-    padding: 8,
-    marginVertical: 4,
-    borderWidth: 1,
-    borderColor: 'gray',
-    borderRadius: 4,
+    justifyContent: 'space-between',
   },
-  current: {
-    backgroundColor: 'lightblue',
+  currentItem: {
+    backgroundColor: '#e9ecef',
   },
   phoneNumber: {
-    flex: 1,
-    marginRight: 8,
+    fontSize: 16,
+    color: '#212529',
+  },
+  removeButton: {
+    padding: 8,
+  },
+  removeButtonText: {
+    fontSize: 20,
+    color: '#dc3545',
+    fontWeight: 'bold',
   },
 });
 

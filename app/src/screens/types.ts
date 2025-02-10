@@ -18,9 +18,8 @@ export type StackScreenProps<T extends keyof StackParamList> =
   NativeStackScreenProps<StackParamList, T>;
 
 export type TabParamList = {
-  Home: undefined;
-  Dialer: undefined;
   ['Auto Dialer']: undefined;
+  Dialer: undefined;
 };
 
 export type TabNavScreenProps<T extends keyof TabParamList> =

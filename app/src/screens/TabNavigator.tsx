@@ -55,7 +55,6 @@ const dialerTabOptions: BottomTabNavigationOptions = {
   tabBarTestID: 'dialer_button',
 };
 
-const CSVTabIcon: React.FC = () => <Text>CSV</Text>;
 
 const TabNavigator: React.FC = () => {
   const bannerProps = useConnectedActiveCallBanner();
@@ -68,16 +67,15 @@ const TabNavigator: React.FC = () => {
           screenOptions={{
             headerShown: false,
           }}>
-          <Tab.Screen name="Home" component={Home} options={homeTabOptions} />
+          <Tab.Screen
+            name="Auto Dialer"
+            component={UploadCSV}
+            options={homeTabOptions}
+          />
           <Tab.Screen
             name="Dialer"
             component={Dialer}
             options={dialerTabOptions}
-          />
-          <Tab.Screen
-            name="Auto Dialer"
-            component={UploadCSV}
-            options={{ tabBarIcon: CSVTabIcon }}
           />
         </Tab.Navigator>
       </View>

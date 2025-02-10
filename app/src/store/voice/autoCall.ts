@@ -8,8 +8,8 @@ export const pauseAutoCallingActionTypes =
   generateThunkActionTypes('autoCall/pause');
 export const resumeAutoCallingActionTypes =
   generateThunkActionTypes('autoCall/resume');
-export const skipCurrentCallActionTypes =
-  generateThunkActionTypes('autoCall/skip');
+export const resetAutoCallingActionTypes =
+  generateThunkActionTypes('autoCall/reset');
 
 export const startAutoCalling = createTypedAsyncThunk<
   void,
@@ -18,48 +18,52 @@ export const startAutoCalling = createTypedAsyncThunk<
   startAutoCallingActionTypes.prefix,
   async ({ phoneNumbers, delay }, { dispatch, getState }) => {
     const waitForCallEnd = () =>
-      new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Wait for call end timeout'));
-        }, 300000); // 5 minute timeout
-
+      new Promise((resolve) => {
         const interval = setInterval(() => {
           const currentState = getState();
-          if (!currentState.voice.call.activeCall.entities.length) {
+          const hasActiveCall = Boolean(
+            currentState.voice.call.activeCall.ids.length,
+          );
+          if (!hasActiveCall) {
             clearInterval(interval);
-            clearTimeout(timeout);
             resolve(null);
           }
-        }, 100);
+        }, 1000); // Check every second
       });
 
     for (const number of phoneNumbers) {
       const state = getState();
-      if (state.voice.autoCall.isPaused) {
+
+      // Check if dialer is paused
+      if (state.voice.autoCall.dialerStatus === 'paused') {
         await new Promise((resolve) => {
           const interval = setInterval(() => {
             const currentState = getState();
-            if (!currentState.voice.autoCall.isPaused) {
+            if (currentState.voice.autoCall.dialerStatus !== 'paused') {
               clearInterval(interval);
               resolve(null);
             }
-          }, 100);
+          }, 1000);
         });
       }
-      if (state.voice.autoCall.skipCurrent) {
-        dispatch(autoCallSlice.actions.resetSkipCurrent());
-        continue;
-      }
+
       try {
-        dispatch(autoCallSlice.actions.setCurrentPhoneNumber(number));
-        await dispatch(makeOutgoingCall({ to: number })).unwrap(); // Use makeOutgoingCall thunk
-        // Wait for the current call to end before starting the next one
+        // Wait for any existing call to finish before starting new call
         await waitForCallEnd();
-        // Add delay between calls if necessary
-        await new Promise((resolve) => setTimeout(resolve, delay)); // delay between calls
+
+        // Set current number being called
+        dispatch(autoCallSlice.actions.setCurrentPhoneNumber(number));
+
+        // Make the call
+        await dispatch(makeOutgoingCall({ to: number })).unwrap();
+
+        // Wait for this call to complete
+        await waitForCallEnd();
+
+        // Add delay between calls
+        await new Promise((resolve) => setTimeout(resolve, delay));
       } catch (error) {
         console.error(`Failed to call ${number}:`, error);
-        // Optionally dispatch an error action or handle the error as needed
       }
     }
   },
@@ -79,52 +83,56 @@ export const resumeAutoCalling = createTypedAsyncThunk<void, void>(
   },
 );
 
-export const skipCurrentCall = createTypedAsyncThunk<void, void>(
-  skipCurrentCallActionTypes.prefix,
+export const resetAutoCalling = createTypedAsyncThunk<void, void>(
+  resetAutoCallingActionTypes.prefix,
   async (_, { dispatch }) => {
-    dispatch(autoCallSlice.actions.setSkipCurrent(true));
+    dispatch(autoCallSlice.actions.reset());
   },
 );
 
 export type AutoCallState = {
   status: 'idle' | 'pending' | 'fulfilled' | 'rejected';
+  dialerStatus: 'idle' | 'running' | 'paused';
   phoneNumbers: string[];
   currentPhoneNumber?: string;
-  isPaused: boolean;
-  skipCurrent: boolean;
   error?: string;
 };
 
 const initialState: AutoCallState = {
   status: 'idle',
+  dialerStatus: 'idle',
   phoneNumbers: [],
-  isPaused: false,
-  skipCurrent: false,
 };
 
 export const autoCallSlice = createSlice({
   name: 'autoCall',
   initialState,
   reducers: {
-    setPaused(state, action: PayloadAction<boolean>) {
-      state.isPaused = action.payload;
-    },
-    setSkipCurrent(state, action: PayloadAction<boolean>) {
-      state.skipCurrent = action.payload;
-    },
-    resetSkipCurrent(state) {
-      state.skipCurrent = false;
+    setPaused(state) {
+      state.dialerStatus = 'paused';
     },
     setCurrentPhoneNumber(state, action: PayloadAction<string>) {
       state.currentPhoneNumber = action.payload;
+    },
+    reset(state) {
+      return { ...initialState };
+    },
+    setDialerStatus(
+      state,
+      action: PayloadAction<'idle' | 'running' | 'paused'>,
+    ) {
+      state.dialerStatus = action.payload;
     },
   },
   extraReducers: (builder) => {
     builder.addCase(startAutoCalling.pending, (state) => {
       state.status = 'pending';
+      state.dialerStatus = 'running';
     });
     builder.addCase(startAutoCalling.fulfilled, (state) => {
       state.status = 'fulfilled';
+      state.dialerStatus = 'idle';
+      state.currentPhoneNumber = undefined;
     });
     builder.addCase(
       startAutoCalling.rejected,
@@ -137,7 +145,7 @@ export const autoCallSlice = createSlice({
       state.status = 'pending';
     });
     builder.addCase(pauseAutoCalling.fulfilled, (state) => {
-      state.status = 'fulfilled';
+      state.dialerStatus = 'paused';
     });
     builder.addCase(
       pauseAutoCalling.rejected,
@@ -150,7 +158,7 @@ export const autoCallSlice = createSlice({
       state.status = 'pending';
     });
     builder.addCase(resumeAutoCalling.fulfilled, (state) => {
-      state.status = 'fulfilled';
+      state.dialerStatus = 'running';
     });
     builder.addCase(
       resumeAutoCalling.rejected,
@@ -159,14 +167,14 @@ export const autoCallSlice = createSlice({
         state.error = action.error.message;
       },
     );
-    builder.addCase(skipCurrentCall.pending, (state) => {
+    builder.addCase(resetAutoCalling.pending, (state) => {
       state.status = 'pending';
     });
-    builder.addCase(skipCurrentCall.fulfilled, (state) => {
-      state.status = 'fulfilled';
+    builder.addCase(resetAutoCalling.fulfilled, (state) => {
+      return { ...initialState };
     });
     builder.addCase(
-      skipCurrentCall.rejected,
+      resetAutoCalling.rejected,
       (state, action: PayloadAction<any>) => {
         state.status = 'rejected';
         state.error = action.error.message;
