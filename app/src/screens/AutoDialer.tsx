@@ -39,6 +39,7 @@ const AutoDialer: React.FC = () => {
   const [currentPhoneNumber, setCurrentPhoneNumber] = useState<string | null>(
     null,
   );
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const activeCall = useActiveCall();
   const dispatch = useDispatch();
@@ -111,6 +112,7 @@ const AutoDialer: React.FC = () => {
 
   useEffect(() => {
     const loadState = async () => {
+      setIsInitialLoading(true);
       try {
         const [fileData, dialerData] = await Promise.all([
           AsyncStorage.getItem('previousFile'),
@@ -119,20 +121,33 @@ const AutoDialer: React.FC = () => {
 
         if (fileData) {
           const parsedFile = JSON.parse(fileData);
-          setFileName(parsedFile.fileName);
-          setParsedPhoneNumbers(parsedFile.phoneNumbers);
+          if (parsedFile && parsedFile.phoneNumbers && parsedFile.fileName) {
+            setFileName(parsedFile.fileName);
+            setParsedPhoneNumbers(parsedFile.phoneNumbers);
+          }
         }
 
         if (dialerData) {
           const parsedDialerState = JSON.parse(dialerData);
-          setDialerStatus(parsedDialerState.status);
-          setCurrentIndex(parsedDialerState.currentIndex);
-          setDelay(parsedDialerState.delay);
-          setCurrentPhoneNumber(parsedDialerState.currentPhoneNumber);
+          if (parsedDialerState) {
+            setDialerStatus(parsedDialerState.status || 'idle');
+            setCurrentIndex(parsedDialerState.currentIndex || 0);
+            setDelay(parsedDialerState.delay || 1000);
+            setCurrentPhoneNumber(parsedDialerState.currentPhoneNumber || null);
+          }
         }
       } catch (error) {
         console.error('Error loading state:', error);
         setErrorMessage('Failed to load previous state');
+        // Reset to default values on error
+        setFileName(null);
+        setParsedPhoneNumbers([]);
+        setDialerStatus('idle');
+        setCurrentIndex(0);
+        setDelay(1000);
+        setCurrentPhoneNumber(null);
+      } finally {
+        setIsInitialLoading(false);
       }
     };
     loadState();
@@ -140,6 +155,8 @@ const AutoDialer: React.FC = () => {
 
   useEffect(() => {
     const saveDialerState = async () => {
+      if (isInitialLoading) return; // Don't save while initial loading
+
       try {
         const dialerState = {
           status: dialerStatus,
@@ -148,12 +165,21 @@ const AutoDialer: React.FC = () => {
           currentPhoneNumber,
         };
         await AsyncStorage.setItem('dialerState', JSON.stringify(dialerState));
+
+        if (fileName && parsedPhoneNumbers.length > 0) {
+          const fileData = {
+            fileName,
+            phoneNumbers: parsedPhoneNumbers,
+          };
+          await AsyncStorage.setItem('previousFile', JSON.stringify(fileData));
+        }
       } catch (error) {
-        console.error('Error saving dialer state:', error);
+        console.error('Error saving state:', error);
+        setErrorMessage('Failed to save state');
       }
     };
     saveDialerState();
-  }, [dialerStatus, currentIndex, delay, currentPhoneNumber]);
+  }, [dialerStatus, currentIndex, delay, currentPhoneNumber, fileName, parsedPhoneNumbers, isInitialLoading]);
 
   const handleFilePick = async () => {
     setIsLoading(true);
@@ -297,6 +323,14 @@ const AutoDialer: React.FC = () => {
     }
   };
 
+  if (isInitialLoading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color={colors.button.primary} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.card}>
@@ -431,125 +465,138 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: 12,
+    padding: 16,
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 2,
-    padding: 6,
-    marginBottom: 10,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
     shadowColor: colors.neutral[900],
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 4,
     overflow: 'hidden',
   },
   progressBar: {
     position: 'absolute',
     top: 0,
     left: 0,
-    height: 3,
-    backgroundColor: colors.progressBar.background,
+    height: 4,
+    backgroundColor: colors.button.primary,
+    opacity: 0.8,
   },
   uploadSection: {
-    marginBottom: 8,
+    marginBottom: 16,
   },
   button: {
-    padding: 8,
-    borderRadius: 8,
+    padding: 12,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  uploadButton: {
-    backgroundColor: colors.button.primary,
-    paddingVertical: 10,
-    borderRadius: 10,
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 2,
   },
+  uploadButton: {
+    flex: 1,
+    backgroundColor: colors.button.primary,
+    paddingVertical: 14,
+  },
   buttonDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   buttonText: {
     color: colors.text.inverse,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.neutral[600],
-    marginTop: 4,
+    marginTop: 8,
+    fontWeight: '500',
   },
   error: {
     color: colors.danger,
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: 13,
+    marginTop: 8,
+    fontWeight: '500',
   },
   controls: {
-    gap: 8,
+    gap: 12,
   },
   delayRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 12,
   },
   delayLabel: {
-    fontSize: 14,
-    color: colors.neutral[900],
+    fontSize: 15,
+    color: colors.neutral[800],
+    fontWeight: '500',
   },
   input: {
     flex: 1,
-    height: 38,
-        borderWidth: 1,
-    borderColor: colors.neutral[300],
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    fontSize: 14,
+    height: 44,
+    borderWidth: 1.5,
+    borderColor: colors.neutral[200],
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    fontSize: 15,
     color: colors.neutral[900],
-    backgroundColor: colors.neutral[100],
+    backgroundColor: colors.neutral[50],
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 12,
   },
   actionButton: {
     flex: 1,
     backgroundColor: colors.button.secondary,
-    paddingVertical: 10,
-    borderRadius: 10,
-    elevation: 2,
+    paddingVertical: 14,
   },
   statusBar: {
-    marginTop: 10,
-    padding: 8,
+    marginTop: 16,
+    padding: 12,
     backgroundColor: colors.activeCall.background,
     borderRadius: 10,
   },
   statusText: {
-    fontSize: 14,
-    color: colors.neutral[700],
-    fontWeight: '500',
+    fontSize: 15,
+    color: colors.neutral[800],
+    fontWeight: '600',
     textAlign: 'center',
   },
   list: {
     flex: 1,
     backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 8,
+    borderRadius: 12,
+    padding: 12,
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   emptyText: {
     textAlign: 'center',
     color: colors.neutral[600],
-    fontSize: 14,
-    padding: 14,
+    fontSize: 15,
+    padding: 16,
+    fontWeight: '500',
   },
   fileActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
   },
   removeButton: {
     backgroundColor: colors.button.danger,
+    minWidth: 120,
   },
   stopButton: {
     flex: 1,
