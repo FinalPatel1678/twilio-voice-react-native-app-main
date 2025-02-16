@@ -1,10 +1,31 @@
-import { configureStore, type Middleware } from '@reduxjs/toolkit';
+import {
+  configureStore,
+  type Middleware,
+  createSlice,
+  PayloadAction,
+} from '@reduxjs/toolkit';
 import { voiceReducer } from './voice';
 import { createLogMiddleware } from './middleware/log';
-import { bootstrapPhoneNumbersAndToken } from './bootstrap';
+
+const initialState = {
+  isBootstrapping: true,
+};
+
+export const appSlice = createSlice({
+  name: 'app',
+  initialState,
+  reducers: {
+    setBootstrapping: (state, action: PayloadAction<boolean>) => {
+      state.isBootstrapping = action.payload;
+    },
+  },
+});
+
+export const { setBootstrapping } = appSlice.actions;
 
 export const defaultReducer = {
   voice: voiceReducer,
+  app: appSlice.reducer,
 };
 
 export const createStore = (...middlewares: Middleware[]) => {
@@ -15,8 +36,6 @@ export const createStore = (...middlewares: Middleware[]) => {
     },
   });
 
-  store.dispatch(bootstrapPhoneNumbersAndToken());
-
   return store;
 };
 
@@ -24,7 +43,9 @@ export const defaultStore = createStore(createLogMiddleware());
 
 export type Store = ReturnType<typeof createStore>;
 
-export type State = ReturnType<Store['getState']>;
+export type State = ReturnType<Store['getState']> & {
+  isBootstrapping: boolean;
+};
 
 export type Dispatch = Store['dispatch'];
 

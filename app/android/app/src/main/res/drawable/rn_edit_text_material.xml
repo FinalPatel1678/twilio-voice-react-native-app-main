@@ -22,5 +22,5 @@
     For more info, see https://bit.ly/3CdLStv (react-native/pull/29452) and https://bit.ly/3nxOMoR.
   -->
   <item android:drawable="@color/dark_blue" />
-  <item android:drawable="@drawable/splash_screen" android:gravity="center" />
+  <!-- <item android:drawable="@drawable/splash_screen" android:gravity="center" /> -->
 </layer-list>

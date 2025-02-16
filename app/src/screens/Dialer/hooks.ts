@@ -4,9 +4,10 @@ import React from 'react';
 import { match } from 'ts-pattern';
 import { useTypedDispatch } from '../../store/common';
 import { makeOutgoingCall as makeOutgoingCallAction } from '../../store/voice/call/outgoingCall';
-import { getAccessToken } from '../../store/voice/accessToken';
 import { type StackNavigationProp } from '../types';
 import { useActiveCall } from '../../hooks/activeCall';
+import { useSelector } from 'react-redux';
+import { State } from '../../store/app';
 
 /**
  * Hook for the dialpad.
@@ -73,10 +74,11 @@ const useMakeOutgoingCall = (
 ) => {
   const to = outgoingNumber;
 
+  const accessToken = useSelector((state: State) => state.voice.accessToken);
+
   const handle = React.useCallback(async () => {
-    const tokenAction = await dispatch(getAccessToken());
-    if (getAccessToken.rejected.match(tokenAction)) {
-      console.error(tokenAction.payload || tokenAction.error);
+
+    if (!(accessToken.status === 'fulfilled')) {
       return;
     }
 
@@ -91,7 +93,7 @@ const useMakeOutgoingCall = (
     }
 
     navigation.navigate('Call', {});
-  }, [dispatch, navigation, to]);
+  }, [accessToken.status, dispatch, navigation, to]);
 
   const isDisabled = React.useMemo(() => {
     return isDialerDisabled || outgoingNumber.length === 0;

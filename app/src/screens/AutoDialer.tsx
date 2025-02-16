@@ -81,23 +81,32 @@ const AutoDialer: React.FC = () => {
   };
 
   const makeNextCall = async () => {
+    console.log(
+      `[AutoDialer] Making next call, current index: ${currentIndex}`,
+    );
     if (currentIndex >= parsedPhoneNumbers.length) {
+      console.log('[AutoDialer] Reached end of phone number list');
       setDialerStatus('idle');
       setCurrentPhoneNumber(null);
       return;
     }
 
     if (dialerStatus !== 'running') {
+      console.log(`[AutoDialer] Dialer not running, status: ${dialerStatus}`);
       return;
     }
 
+    // Add delay before making the next call
+    await new Promise((resolve) => setTimeout(resolve, delay));
+
     const nextNumber = parsedPhoneNumbers[currentIndex];
+    console.log(`[AutoDialer] Calling number: ${nextNumber}`);
     setCurrentPhoneNumber(nextNumber);
     try {
       await dispatch(makeOutgoingCall({ to: nextNumber }));
       setCurrentIndex((prev) => prev + 1);
     } catch (error) {
-      console.error(`Failed to call ${nextNumber}:`, error);
+      console.error(`[AutoDialer] Failed to call ${nextNumber}:`, error);
       setCurrentIndex((prev) => prev + 1);
       makeNextCall();
     }
@@ -112,16 +121,21 @@ const AutoDialer: React.FC = () => {
 
   useEffect(() => {
     const loadState = async () => {
+      console.log('[AutoDialer] Loading previous state');
       setIsInitialLoading(true);
       try {
-        const [fileData, dialerData] = await Promise.all([
-          AsyncStorage.getItem('previousFile'),
-          AsyncStorage.getItem('dialerState'),
-        ]);
+        const fileData = await AsyncStorage.getItem('previousFile');
+        const dialerData = await AsyncStorage.getItem('dialerState');
+
+        console.log('[AutoDialer] Retrieved stored data:', {
+          fileData,
+          dialerData,
+        });
 
         if (fileData) {
           const parsedFile = JSON.parse(fileData);
           if (parsedFile && parsedFile.phoneNumbers && parsedFile.fileName) {
+            console.log('[AutoDialer] Restoring file:', parsedFile.fileName);
             setFileName(parsedFile.fileName);
             setParsedPhoneNumbers(parsedFile.phoneNumbers);
           }
@@ -130,6 +144,10 @@ const AutoDialer: React.FC = () => {
         if (dialerData) {
           const parsedDialerState = JSON.parse(dialerData);
           if (parsedDialerState) {
+            console.log(
+              '[AutoDialer] Restoring dialer state:',
+              parsedDialerState,
+            );
             setDialerStatus(parsedDialerState.status || 'idle');
             setCurrentIndex(parsedDialerState.currentIndex || 0);
             setDelay(parsedDialerState.delay || 1000);
@@ -137,7 +155,7 @@ const AutoDialer: React.FC = () => {
           }
         }
       } catch (error) {
-        console.error('Error loading state:', error);
+        console.error('[AutoDialer] Error loading state:', error);
         setErrorMessage('Failed to load previous state');
         // Reset to default values on error
         setFileName(null);
@@ -155,7 +173,9 @@ const AutoDialer: React.FC = () => {
 
   useEffect(() => {
     const saveDialerState = async () => {
-      if (isInitialLoading) return; // Don't save while initial loading
+      if (isInitialLoading) {
+        return;
+      } // Don't save while initial loading
 
       try {
         const dialerState = {
@@ -164,6 +184,7 @@ const AutoDialer: React.FC = () => {
           delay,
           currentPhoneNumber,
         };
+        console.log('[AutoDialer] Saving dialer state:', dialerState);
         await AsyncStorage.setItem('dialerState', JSON.stringify(dialerState));
 
         if (fileName && parsedPhoneNumbers.length > 0) {
@@ -171,15 +192,24 @@ const AutoDialer: React.FC = () => {
             fileName,
             phoneNumbers: parsedPhoneNumbers,
           };
+          console.log('[AutoDialer] Saving file data:', fileData);
           await AsyncStorage.setItem('previousFile', JSON.stringify(fileData));
         }
       } catch (error) {
-        console.error('Error saving state:', error);
+        console.error('[AutoDialer] Error saving state:', error);
         setErrorMessage('Failed to save state');
       }
     };
     saveDialerState();
-  }, [dialerStatus, currentIndex, delay, currentPhoneNumber, fileName, parsedPhoneNumbers, isInitialLoading]);
+  }, [
+    dialerStatus,
+    currentIndex,
+    delay,
+    currentPhoneNumber,
+    fileName,
+    parsedPhoneNumbers,
+    isInitialLoading,
+  ]);
 
   const handleFilePick = async () => {
     setIsLoading(true);
@@ -356,7 +386,7 @@ const AutoDialer: React.FC = () => {
                 isLoading && styles.buttonDisabled,
               ]}
               onPress={handleFilePick}
-              disabled={isLoading}>
+              disabled={isLoading || dialerStatus !== 'idle' || isCallActive}>
               {isLoading ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
@@ -365,7 +395,7 @@ const AutoDialer: React.FC = () => {
                 </Text>
               )}
             </TouchableOpacity>
-            {fileName && (
+            {fileName && dialerStatus === 'idle' && !isCallActive && (
               <TouchableOpacity
                 style={[styles.button, styles.removeButton]}
                 onPress={handleRemoveFile}>
