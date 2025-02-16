@@ -28,7 +28,7 @@ const isValidPhoneNumber = (number: string) => {
 
 const AutoDialer: React.FC = () => {
   const [fileName, setFileName] = useState<string | null>(null);
-  const [delay, setDelay] = useState<number>(1000);
+  const [delay, setDelay] = useState<number>(1); // Use seconds instead of milliseconds
   const [parsedPhoneNumbers, setParsedPhoneNumbers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -97,7 +97,7 @@ const AutoDialer: React.FC = () => {
     }
 
     // Add delay before making the next call
-    await new Promise((resolve) => setTimeout(resolve, delay));
+    await new Promise((resolve) => setTimeout(resolve, delay * 1000)); // Convert seconds to milliseconds
 
     const nextNumber = parsedPhoneNumbers[currentIndex];
     console.log(`[AutoDialer] Calling number: ${nextNumber}`);
@@ -150,7 +150,7 @@ const AutoDialer: React.FC = () => {
             );
             setDialerStatus(parsedDialerState.status || 'idle');
             setCurrentIndex(parsedDialerState.currentIndex || 0);
-            setDelay(parsedDialerState.delay || 1000);
+            setDelay(parsedDialerState.delay || 1); // Use seconds
             setCurrentPhoneNumber(parsedDialerState.currentPhoneNumber || null);
           }
         }
@@ -162,7 +162,7 @@ const AutoDialer: React.FC = () => {
         setParsedPhoneNumbers([]);
         setDialerStatus('idle');
         setCurrentIndex(0);
-        setDelay(1000);
+        setDelay(1); // Use seconds
         setCurrentPhoneNumber(null);
       } finally {
         setIsInitialLoading(false);
@@ -355,7 +355,7 @@ const AutoDialer: React.FC = () => {
 
   if (isInitialLoading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.button.primary} />
       </View>
     );
@@ -363,112 +363,100 @@ const AutoDialer: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
-        {dialerStatus !== 'idle' && (
-          <Animated.View
-            style={[
-              styles.progressBar,
-              {
-                width: progressValue.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0%', '100%'],
-                }),
-              },
-            ]}
-          />
-        )}
-        <View style={styles.uploadSection}>
-          <View style={styles.fileActions}>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                styles.uploadButton,
-                isLoading && styles.buttonDisabled,
-              ]}
-              onPress={handleFilePick}
-              disabled={isLoading || dialerStatus !== 'idle' || isCallActive}>
-              {isLoading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.buttonText}>
-                  {fileName ? 'Change File' : 'Select CSV'}
-                </Text>
-              )}
-            </TouchableOpacity>
-            {fileName && dialerStatus === 'idle' && !isCallActive && (
-              <TouchableOpacity
-                style={[styles.button, styles.removeButton]}
-                onPress={handleRemoveFile}>
-                <Text style={styles.buttonText}>Remove File</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          {fileName && <Text style={styles.subtitle}>File: {fileName}</Text>}
-          {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
-        </View>
-
-        <View style={styles.controls}>
-          <View style={styles.delayRow}>
-            <Text style={styles.delayLabel}>Delay (ms):</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="1000"
-              keyboardType="numeric"
-              value={delay.toString()}
-              onChangeText={handleDelayChange}
-            />
-          </View>
-
-          <View style={styles.buttonRow}>
-            {dialerStatus === 'idle' && (
-              <TouchableOpacity
-                style={[styles.button, styles.actionButton]}
-                onPress={handleStartAutoDialing}
-                disabled={
-                  dialerStatus !== 'idle' ||
-                  parsedPhoneNumbers.length <= 0 ||
-                  isCallActive
-                }>
-                <Text style={styles.buttonText}>Start Auto Dialer</Text>
-              </TouchableOpacity>
-            )}
-
-            {dialerStatus === 'running' && (
-              <TouchableOpacity
-                style={[styles.button, styles.actionButton]}
-                onPress={handlePauseAutoDialing}>
-                <Text style={styles.buttonText}>Pause</Text>
-              </TouchableOpacity>
-            )}
-
-            {dialerStatus === 'paused' && (
-              <>
-                <TouchableOpacity
-                  style={[styles.button, styles.actionButton]}
-                  onPress={handleResumeAutoDialing}>
-                  <Text style={styles.buttonText}>Resume</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.button, styles.stopButton]}
-                  onPress={handleStopAutoDialing}>
-                  <Text style={styles.buttonText}>Stop</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </View>
-
-        <Animated.View style={[styles.statusBar, { opacity: fadeAnim }]}>
-          {currentPhoneNumber ? (
-            <Text style={styles.statusText}>
-              Calling: {currentPhoneNumber} ({currentIndex + 1}/
-              {parsedPhoneNumbers.length})
-            </Text>
+      <View style={styles.uploadSection}>
+        <TouchableOpacity
+          style={[
+            styles.button,
+            styles.uploadButton,
+            (isLoading || dialerStatus !== 'idle') && styles.buttonDisabled,
+          ]}
+          onPress={handleFilePick}
+          disabled={isLoading || dialerStatus !== 'idle' || isCallActive}>
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <Text style={styles.statusText}>Ready to start</Text>
+            <Text style={styles.buttonText}>
+              {fileName ? 'Change File' : 'Select CSV'}
+            </Text>
           )}
-        </Animated.View>
+        </TouchableOpacity>
+        {fileName && dialerStatus === 'idle' && !isCallActive && (
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.removeButton,
+              dialerStatus !== 'idle' && styles.buttonDisabled,
+            ]}
+            disabled={dialerStatus !== 'idle'}
+            onPress={handleRemoveFile}>
+            <Text style={styles.buttonText}>Remove File</Text>
+          </TouchableOpacity>
+        )}
       </View>
+      {fileName && <Text style={styles.subtitle}>File: {fileName}</Text>}
+      {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
+
+      <View style={styles.controls}>
+        <View style={styles.delayRow}>
+          <Text style={styles.delayLabel}>Delay (s):</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="1"
+            keyboardType="numeric"
+            value={delay.toString()}
+            onChangeText={handleDelayChange}
+          />
+        </View>
+
+        <View style={styles.buttonRow}>
+          {dialerStatus === 'idle' && (
+            <TouchableOpacity
+              style={[styles.button, styles.actionButton]}
+              onPress={handleStartAutoDialing}
+              disabled={
+                dialerStatus !== 'idle' ||
+                parsedPhoneNumbers.length <= 0 ||
+                isCallActive
+              }>
+              <Text style={styles.buttonText}>Start Auto Dialer</Text>
+            </TouchableOpacity>
+          )}
+
+          {dialerStatus === 'running' && (
+            <TouchableOpacity
+              style={[styles.button, styles.actionButton]}
+              onPress={handlePauseAutoDialing}>
+              <Text style={styles.buttonText}>Pause</Text>
+            </TouchableOpacity>
+          )}
+
+          {dialerStatus === 'paused' && (
+            <>
+              <TouchableOpacity
+                style={[styles.button, styles.actionButton]}
+                onPress={handleResumeAutoDialing}>
+                <Text style={styles.buttonText}>Resume</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.stopButton]}
+                onPress={handleStopAutoDialing}>
+                <Text style={styles.buttonText}>Stop</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </View>
+
+      <Animated.View style={[styles.statusBar, { opacity: fadeAnim }]}>
+        {currentPhoneNumber ? (
+          <Text style={styles.statusText}>
+            Calling: {currentPhoneNumber} ({currentIndex}/
+            {parsedPhoneNumbers.length})
+          </Text>
+        ) : (
+          <Text style={styles.statusText}>Ready to start</Text>
+        )}
+      </Animated.View>
 
       <FlatList
         style={styles.list}
@@ -478,7 +466,12 @@ const AutoDialer: React.FC = () => {
           <PhoneNumberItem
             phoneNumber={item}
             isCurrent={item === currentPhoneNumber}
-            onRemove={() => handleRemoveNumber(index)}
+            onRemove={
+              // Allow removal if number is not currently being called
+              item > currentPhoneNumber || dialerStatus === 'idle'
+                ? () => handleRemoveNumber(index)
+                : undefined
+            }
           />
         )}
         ListEmptyComponent={
@@ -494,143 +487,107 @@ const AutoDialer: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#ffffff',
     padding: 16,
   },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: colors.neutral[900],
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    height: 4,
-    backgroundColor: colors.button.primary,
-    opacity: 0.8,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
   },
   uploadSection: {
+    flexDirection: 'row',
     marginBottom: 16,
+    gap: 8,
   },
   button: {
-    padding: 12,
-    borderRadius: 10,
+    padding: 10,
+    borderRadius: 4,
+    backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.neutral[900],
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   uploadButton: {
     flex: 1,
-    backgroundColor: colors.button.primary,
-    paddingVertical: 14,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   buttonText: {
-    color: colors.text.inverse,
-    fontSize: 15,
-    fontWeight: '600',
-    textAlign: 'center',
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '500',
   },
   subtitle: {
-    fontSize: 13,
-    color: colors.neutral[600],
-    marginTop: 8,
-    fontWeight: '500',
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 8,
   },
   error: {
-    color: colors.danger,
-    fontSize: 13,
-    marginTop: 8,
-    fontWeight: '500',
+    color: '#FF3B30',
+    fontSize: 14,
+    marginBottom: 8,
   },
   controls: {
-    gap: 12,
+    marginBottom: 16,
   },
   delayRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    marginBottom: 8,
   },
   delayLabel: {
-    fontSize: 15,
-    color: colors.neutral[800],
-    fontWeight: '500',
+    fontSize: 14,
+    width: 80,
+    color: '#000000',
   },
   input: {
     flex: 1,
-    height: 44,
-    borderWidth: 1.5,
-    borderColor: colors.neutral[200],
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    fontSize: 15,
-    color: colors.neutral[900],
-    backgroundColor: colors.neutral[50],
+    height: 40,
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    borderRadius: 4,
+    paddingHorizontal: 8, color: '#000000',
+    backgroundColor: '#FFFFFF',
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
   actionButton: {
     flex: 1,
-    backgroundColor: colors.button.secondary,
-    paddingVertical: 14,
+    backgroundColor: '#34C759',
   },
   statusBar: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: colors.activeCall.background,
-    borderRadius: 10,
+    marginBottom: 14,
+    padding: 10,
+    backgroundColor: '#F2F2F7',
+    borderRadius: 4,
   },
   statusText: {
-    fontSize: 15,
-    color: colors.neutral[800],
-    fontWeight: '600',
+    fontSize: 14,
+    color: '#000000',
     textAlign: 'center',
   },
   list: {
     flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 12,
-    shadowColor: colors.neutral[900],
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: -16, // This will make the list stretch edge to edge
   },
   emptyText: {
     textAlign: 'center',
-    color: colors.neutral[600],
-    fontSize: 15,
+    color: '#8E8E93',
+    fontSize: 14,
     padding: 16,
-    fontWeight: '500',
-  },
-  fileActions: {
-    flexDirection: 'row',
-    gap: 12,
   },
   removeButton: {
-    backgroundColor: colors.button.danger,
-    minWidth: 120,
+    backgroundColor: '#FF3B30',
+    minWidth: 100,
   },
   stopButton: {
     flex: 1,
-    backgroundColor: colors.button.danger,
+    backgroundColor: '#FF3B30',
   },
 });
 

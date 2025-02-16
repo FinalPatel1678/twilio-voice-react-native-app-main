@@ -11,8 +11,8 @@ import Dialer from './Dialer';
 import AutoDialer from './AutoDialer';
 import { type TabParamList } from './types';
 
-const HomeSource = require('../../assets/icons/home.png');
-const HomeSelectedSource = require('../../assets/icons/home-selected.png');
+const HomeSource = require('../../assets/icons/call.png');
+const HomeSelectedSource = require('../../assets/icons/call-selected.png');
 const DialpadSource = require('../../assets/icons/dialpad-dark.png');
 const DialpadSelectedSource = require('../../assets/icons/dialpad-selected.png');
 const Tab = createBottomTabNavigator<TabParamList>();

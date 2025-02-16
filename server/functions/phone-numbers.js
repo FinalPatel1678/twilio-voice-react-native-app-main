@@ -12,7 +12,7 @@ exports.handler = async function (context, event, callback) {
         return callback(null, response);
     }
 
-    const client = twilio(context.ACCOUNT_SID, context.AUTH_TOKEN);
+    const client = new twilio.Twilio(context.TWILIO_API_KEY, context.TWILIO_API_SECRET, { accountSid: context.ACCOUNT_SID })
 
     try {
         const incomingPhoneNumbers = await client.incomingPhoneNumbers.list({ status: 'active' });
