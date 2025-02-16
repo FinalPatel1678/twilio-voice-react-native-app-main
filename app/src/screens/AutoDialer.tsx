@@ -124,46 +124,55 @@ const AutoDialer: React.FC = () => {
       console.log('[AutoDialer] Loading previous state');
       setIsInitialLoading(true);
       try {
-        const fileData = await AsyncStorage.getItem('previousFile');
-        const dialerData = await AsyncStorage.getItem('dialerState');
+        const [fileData, dialerData] = await Promise.all([
+          AsyncStorage.getItem('previousFile'),
+          AsyncStorage.getItem('dialerState'),
+        ]);
 
-        console.log('[AutoDialer] Retrieved stored data:', {
-          fileData,
-          dialerData,
+        console.log('[AutoDialer] Raw stored data:', {
+          fileData: fileData || 'null',
+          dialerData: dialerData || 'null',
         });
 
         if (fileData) {
-          const parsedFile = JSON.parse(fileData);
-          if (parsedFile && parsedFile.phoneNumbers && parsedFile.fileName) {
-            console.log('[AutoDialer] Restoring file:', parsedFile.fileName);
-            setFileName(parsedFile.fileName);
-            setParsedPhoneNumbers(parsedFile.phoneNumbers);
+          try {
+            const parsedFile = JSON.parse(fileData);
+            console.log('[AutoDialer] Parsed file data:', parsedFile);
+            if (parsedFile?.phoneNumbers?.length > 0 && parsedFile.fileName) {
+              setFileName(parsedFile.fileName);
+              setParsedPhoneNumbers(parsedFile.phoneNumbers);
+              console.log('[AutoDialer] Successfully restored file data');
+            } else {
+              console.warn('[AutoDialer] Invalid file data structure');
+            }
+          } catch (parseError) {
+            console.error('[AutoDialer] Error parsing file data:', parseError);
           }
         }
 
         if (dialerData) {
-          const parsedDialerState = JSON.parse(dialerData);
-          if (parsedDialerState) {
-            console.log(
-              '[AutoDialer] Restoring dialer state:',
-              parsedDialerState,
+          try {
+            const parsedDialerState = JSON.parse(dialerData);
+            console.log('[AutoDialer] Parsed dialer state:', parsedDialerState);
+            if (parsedDialerState) {
+              setDialerStatus(parsedDialerState.status || 'idle');
+              setCurrentIndex(parsedDialerState.currentIndex || 0);
+              setDelay(parsedDialerState.delay || 1);
+              setCurrentPhoneNumber(
+                parsedDialerState.currentPhoneNumber || null,
+              );
+              console.log('[AutoDialer] Successfully restored dialer state');
+            }
+          } catch (parseError) {
+            console.error(
+              '[AutoDialer] Error parsing dialer state:',
+              parseError,
             );
-            setDialerStatus(parsedDialerState.status || 'idle');
-            setCurrentIndex(parsedDialerState.currentIndex || 0);
-            setDelay(parsedDialerState.delay || 1); // Use seconds
-            setCurrentPhoneNumber(parsedDialerState.currentPhoneNumber || null);
           }
         }
       } catch (error) {
         console.error('[AutoDialer] Error loading state:', error);
         setErrorMessage('Failed to load previous state');
-        // Reset to default values on error
-        setFileName(null);
-        setParsedPhoneNumbers([]);
-        setDialerStatus('idle');
-        setCurrentIndex(0);
-        setDelay(1); // Use seconds
-        setCurrentPhoneNumber(null);
       } finally {
         setIsInitialLoading(false);
       }
@@ -175,7 +184,7 @@ const AutoDialer: React.FC = () => {
     const saveDialerState = async () => {
       if (isInitialLoading) {
         return;
-      } // Don't save while initial loading
+      }
 
       try {
         const dialerState = {
@@ -184,23 +193,45 @@ const AutoDialer: React.FC = () => {
           delay,
           currentPhoneNumber,
         };
-        console.log('[AutoDialer] Saving dialer state:', dialerState);
-        await AsyncStorage.setItem('dialerState', JSON.stringify(dialerState));
 
-        if (fileName && parsedPhoneNumbers.length > 0) {
-          const fileData = {
-            fileName,
-            phoneNumbers: parsedPhoneNumbers,
-          };
-          console.log('[AutoDialer] Saving file data:', fileData);
-          await AsyncStorage.setItem('previousFile', JSON.stringify(fileData));
-        }
+        const fileData =
+          fileName && parsedPhoneNumbers.length > 0
+            ? { fileName, phoneNumbers: parsedPhoneNumbers }
+            : null;
+
+        console.log('[AutoDialer] Attempting to save state:', {
+          dialerState,
+          fileData,
+        });
+
+        await Promise.all([
+          AsyncStorage.setItem('dialerState', JSON.stringify(dialerState)),
+          fileData
+            ? AsyncStorage.setItem('previousFile', JSON.stringify(fileData))
+            : AsyncStorage.removeItem('previousFile'),
+        ]);
+
+        console.log('[AutoDialer] Successfully saved state');
+
+        // Verify the save by reading back
+        const [savedDialerData, savedFileData] = await Promise.all([
+          AsyncStorage.getItem('dialerState'),
+          AsyncStorage.getItem('previousFile'),
+        ]);
+
+        console.log('[AutoDialer] Verification - Read back saved data:', {
+          dialerData: savedDialerData,
+          fileData: savedFileData,
+        });
       } catch (error) {
         console.error('[AutoDialer] Error saving state:', error);
         setErrorMessage('Failed to save state');
       }
     };
-    saveDialerState();
+
+    // Debounce the save operation to prevent too frequent writes
+    const timeoutId = setTimeout(saveDialerState, 300);
+    return () => clearTimeout(timeoutId);
   }, [
     dialerStatus,
     currentIndex,
@@ -548,7 +579,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CCCCCC',
     borderRadius: 4,
-    paddingHorizontal: 8, color: '#000000',
+    paddingHorizontal: 8,
+    color: '#000000',
     backgroundColor: '#FFFFFF',
   },
   buttonRow: {
