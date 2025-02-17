@@ -41,7 +41,7 @@ public class MainActivity extends ReactActivity {
    */
   @Override
   protected String getMainComponentName() {
-    return "TwilioVoiceApp";
+    return "Twilio Auto Dialer";
   }
 
   /**

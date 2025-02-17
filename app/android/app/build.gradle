@@ -3,22 +3,7 @@ apply plugin: "com.facebook.react"
 
 react {}
 
-/**
- * Run Proguard to shrink the Java bytecode in release builds.
- */
 def enableProguardInReleaseBuilds = false
-
-/**
- * The preferred build flavor of JavaScriptCore.
- *
- * For example, to use the international variant, you can use:
- * `def jscFlavor = 'org.webkit:android-jsc-intl:+'`
- *
- * The international variant includes ICU i18n library and necessary data
- * allowing to use e.g. `Date.toLocaleString` and `String.localeCompare` that
- * give correct results when using with locales other than en-US.  Note that
- * this variant is about 6MiB larger per architecture than default.
- */
 def jscFlavor = 'org.webkit:android-jsc:+'
 
 // Setup for react-native-config package: https://github.com/luggit/react-native-config
@@ -26,7 +11,6 @@ apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.grad
 
 android {
     ndkVersion rootProject.ext.ndkVersion
-
     compileSdkVersion rootProject.ext.compileSdkVersion
 
     namespace "com.twiliovoicereactnativereferenceapp"
@@ -36,8 +20,6 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
-
-        buildConfigField 'String', 'APPCENTER_APP_KEY', stringifyNull(getLocalPropertyOrEnv("APP_CENTER_APP_SECRET_ANDROID"))
     }
 
     signingConfigs {
@@ -54,8 +36,6 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
             signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
@@ -64,8 +44,6 @@ android {
 }
 
 dependencies {
-    implementation "com.microsoft.appcenter:appcenter-distribute:4.3.1"
-
     implementation("com.facebook.react:react-android")
 
     if (hermesEnabled.toBoolean()) {
@@ -77,20 +55,3 @@ dependencies {
 
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle");
 applyNativeModulesAppBuildGradle(project);
-
-def getLocalPropertyOrEnv(key) {
-    def return_value = System.getenv(key)
-    if (null == return_value && project.rootProject.file('local.properties').exists()) {
-        Properties properties = new Properties()
-        properties.load(project.rootProject.file('local.properties').newDataInputStream())
-        return_value = properties.getProperty(key)
-    }
-    return return_value;
-}
-
-static def stringifyNull(var) {
-    if (null == var) {
-        return "\"null\""
-    }
-    return "\"" + var + "\"";
-}

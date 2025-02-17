@@ -7,8 +7,6 @@ import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint;
 import com.facebook.soloader.SoLoader;
 import com.twiliovoicereactnative.VoiceApplicationProxy;
-import com.microsoft.appcenter.AppCenter;
-import com.microsoft.appcenter.distribute.Distribute;
 
 public class MainApplication extends Application implements ReactApplication {
     private final MainReactNativeHost mReactNativeHost;
@@ -28,11 +26,6 @@ public class MainApplication extends Application implements ReactApplication {
     public void onCreate() {
         super.onCreate();
         voiceApplicationProxy.onCreate();
-
-        // for app center if available
-        if (!"null".equals(BuildConfig.APPCENTER_APP_KEY)) {
-            AppCenter.start(this, BuildConfig.APPCENTER_APP_KEY, Distribute.class);
-        }
 
         SoLoader.init(this, /* native exopackage */ false);
         if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {

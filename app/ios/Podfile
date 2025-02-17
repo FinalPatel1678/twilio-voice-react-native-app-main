@@ -15,7 +15,7 @@ if linkage != nil
   use_frameworks! :linkage => linkage.to_sym
 end
 
-target 'TwilioVoiceApp' do
+target 'Twilio Auto Dialer' do
   config = use_native_modules!
 
   # Flags change depending on the env values.
