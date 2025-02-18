@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../../theme/colors';
 
-const ActiveCallSource = require('../../../assets/icons/active-call.png');
+const ActiveCallSource = require('../../assets/icons/active-call.png');
 
 export type Props = {
   callDuration: string;

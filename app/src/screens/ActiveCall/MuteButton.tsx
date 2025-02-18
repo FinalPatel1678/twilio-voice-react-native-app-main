@@ -2,8 +2,8 @@ import React from 'react';
 import { Image, StyleSheet } from 'react-native';
 import Button, { type Props as ButtonProps } from '../../components/Button';
 
-const MuteSource = require('../../../assets/icons/mute.png');
-const MuteActiveSource = require('../../../assets/icons/mute-active.png');
+const MuteSource = require('../../assets/icons/mute.png');
+const MuteActiveSource = require('../../assets/icons/mute-active.png');
 
 export type Props = {
   active?: boolean;

@@ -15,6 +15,23 @@
 		7699B88040F8A987B510C191 /* libPods-TwilioVoiceApp-TwilioVoiceReactNativeReferenceAppTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19F6CBCC0A4E27FBF8BF4A61 /* libPods-TwilioVoiceApp-TwilioVoiceReactNativeReferenceAppTests.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		8FDD25AB2A969E23005393C7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8FDD25AA2A969E23005393C7 /* Assets.xcassets */; };
+		DE03355984224173B58A8F52 /* active-call.png in Resources */ = {isa = PBXBuildFile; fileRef = 85B4A03CA02D42F28FF4E7ED /* active-call.png */; };
+		42732E376C28493F9D1B8BFC /* arrow-forward.png in Resources */ = {isa = PBXBuildFile; fileRef = EFD6999FFDE843DCBBE333B7 /* arrow-forward.png */; };
+		B18451B5598041769835285E /* backspace.png in Resources */ = {isa = PBXBuildFile; fileRef = 97B0C2D7401C40AAB5393E94 /* backspace.png */; };
+		C73EFF4B65F44F0684A39C14 /* bluetooth-active.png in Resources */ = {isa = PBXBuildFile; fileRef = 095885B19DBF4208993F4E63 /* bluetooth-active.png */; };
+		A524847D82574F6B80C47D1B /* bluetooth.png in Resources */ = {isa = PBXBuildFile; fileRef = 053A51225B6B4A0BB44B255A /* bluetooth.png */; };
+		C2AFEFAEFE3E45DA9AA3CFBA /* call-selected.png in Resources */ = {isa = PBXBuildFile; fileRef = CFF4DE8609CA46BE93D2EFA9 /* call-selected.png */; };
+		B76DB89EFBD84963846AF2D6 /* call.png in Resources */ = {isa = PBXBuildFile; fileRef = C3D45D62C2BE47A4B91020F9 /* call.png */; };
+		7CFA9BC376DB42C6B73CBC4E /* dialpad-dark.png in Resources */ = {isa = PBXBuildFile; fileRef = 6C27DB650B5941DF8A6DFC57 /* dialpad-dark.png */; };
+		E6CFF6484837457D88F91BF8 /* dialpad-selected.png in Resources */ = {isa = PBXBuildFile; fileRef = C8002B44D399419D931F3085 /* dialpad-selected.png */; };
+		822A9822DC3749DC82E171EE /* end-call.png in Resources */ = {isa = PBXBuildFile; fileRef = 05F9B6A0DCD44B829024885B /* end-call.png */; };
+		82A808D4695246F1899CB790 /* error.png in Resources */ = {isa = PBXBuildFile; fileRef = 819D8586C083486D9D38DF76 /* error.png */; };
+		939757EC35AE404A93B2ADF2 /* hide-dialpad.png in Resources */ = {isa = PBXBuildFile; fileRef = 53EA42C0574A4FDABFF8A27F /* hide-dialpad.png */; };
+		EF20D27749054A89AB404D7D /* make-call.png in Resources */ = {isa = PBXBuildFile; fileRef = D597AA198D744C78AA31FFF3 /* make-call.png */; };
+		B3961184F72B403E8F92373A /* mute-active.png in Resources */ = {isa = PBXBuildFile; fileRef = 4D4E8A852F234FBAB5A602A7 /* mute-active.png */; };
+		F59EE22584E4411BAB51AAB1 /* mute.png in Resources */ = {isa = PBXBuildFile; fileRef = 6983054ECFBC497C8B47B711 /* mute.png */; };
+		E23AD9E90DFB414A9663D8D8 /* speaker-active.png in Resources */ = {isa = PBXBuildFile; fileRef = EFEFCFEF1FC24D29BD6B9611 /* speaker-active.png */; };
+		999D91F934C34800B86F1344 /* speaker.png in Resources */ = {isa = PBXBuildFile; fileRef = 353F47AD612E465DBFE8D504 /* speaker.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +64,23 @@
 		8F95B8992A8181FF00E6E347 /* TwilioVoiceApp.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; name = TwilioVoiceApp.entitlements; path = TwilioVoiceApp/TwilioVoiceApp.entitlements; sourceTree = "<group>"; };
 		8FDD25AA2A969E23005393C7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		85B4A03CA02D42F28FF4E7ED /* active-call.png */ = {isa = PBXFileReference; name = "active-call.png"; path = "../assets/icons/active-call.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		EFD6999FFDE843DCBBE333B7 /* arrow-forward.png */ = {isa = PBXFileReference; name = "arrow-forward.png"; path = "../assets/icons/arrow-forward.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		97B0C2D7401C40AAB5393E94 /* backspace.png */ = {isa = PBXFileReference; name = "backspace.png"; path = "../assets/icons/backspace.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		095885B19DBF4208993F4E63 /* bluetooth-active.png */ = {isa = PBXFileReference; name = "bluetooth-active.png"; path = "../assets/icons/bluetooth-active.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		053A51225B6B4A0BB44B255A /* bluetooth.png */ = {isa = PBXFileReference; name = "bluetooth.png"; path = "../assets/icons/bluetooth.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		CFF4DE8609CA46BE93D2EFA9 /* call-selected.png */ = {isa = PBXFileReference; name = "call-selected.png"; path = "../assets/icons/call-selected.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		C3D45D62C2BE47A4B91020F9 /* call.png */ = {isa = PBXFileReference; name = "call.png"; path = "../assets/icons/call.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		6C27DB650B5941DF8A6DFC57 /* dialpad-dark.png */ = {isa = PBXFileReference; name = "dialpad-dark.png"; path = "../assets/icons/dialpad-dark.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		C8002B44D399419D931F3085 /* dialpad-selected.png */ = {isa = PBXFileReference; name = "dialpad-selected.png"; path = "../assets/icons/dialpad-selected.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		05F9B6A0DCD44B829024885B /* end-call.png */ = {isa = PBXFileReference; name = "end-call.png"; path = "../assets/icons/end-call.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		819D8586C083486D9D38DF76 /* error.png */ = {isa = PBXFileReference; name = "error.png"; path = "../assets/icons/error.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		53EA42C0574A4FDABFF8A27F /* hide-dialpad.png */ = {isa = PBXFileReference; name = "hide-dialpad.png"; path = "../assets/icons/hide-dialpad.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		D597AA198D744C78AA31FFF3 /* make-call.png */ = {isa = PBXFileReference; name = "make-call.png"; path = "../assets/icons/make-call.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		4D4E8A852F234FBAB5A602A7 /* mute-active.png */ = {isa = PBXFileReference; name = "mute-active.png"; path = "../assets/icons/mute-active.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		6983054ECFBC497C8B47B711 /* mute.png */ = {isa = PBXFileReference; name = "mute.png"; path = "../assets/icons/mute.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		EFEFCFEF1FC24D29BD6B9611 /* speaker-active.png */ = {isa = PBXFileReference; name = "speaker-active.png"; path = "../assets/icons/speaker-active.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		353F47AD612E465DBFE8D504 /* speaker.png */ = {isa = PBXFileReference; name = "speaker.png"; path = "../assets/icons/speaker.png"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -127,6 +161,7 @@
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
+				931359F99B9340EFAE2BF41E /* Resources */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -152,6 +187,31 @@
 			);
 			path = Pods;
 			sourceTree = "<group>";
+		};
+		931359F99B9340EFAE2BF41E /* Resources */ = {
+			isa = "PBXGroup";
+			children = (
+				85B4A03CA02D42F28FF4E7ED /* active-call.png */,
+				EFD6999FFDE843DCBBE333B7 /* arrow-forward.png */,
+				97B0C2D7401C40AAB5393E94 /* backspace.png */,
+				095885B19DBF4208993F4E63 /* bluetooth-active.png */,
+				053A51225B6B4A0BB44B255A /* bluetooth.png */,
+				CFF4DE8609CA46BE93D2EFA9 /* call-selected.png */,
+				C3D45D62C2BE47A4B91020F9 /* call.png */,
+				6C27DB650B5941DF8A6DFC57 /* dialpad-dark.png */,
+				C8002B44D399419D931F3085 /* dialpad-selected.png */,
+				05F9B6A0DCD44B829024885B /* end-call.png */,
+				819D8586C083486D9D38DF76 /* error.png */,
+				53EA42C0574A4FDABFF8A27F /* hide-dialpad.png */,
+				D597AA198D744C78AA31FFF3 /* make-call.png */,
+				4D4E8A852F234FBAB5A602A7 /* mute-active.png */,
+				6983054ECFBC497C8B47B711 /* mute.png */,
+				EFEFCFEF1FC24D29BD6B9611 /* speaker-active.png */,
+				353F47AD612E465DBFE8D504 /* speaker.png */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+			path = "";
 		};
 /* End PBXGroup section */
 
@@ -251,6 +311,23 @@
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				8FDD25AB2A969E23005393C7 /* Assets.xcassets in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+				DE03355984224173B58A8F52 /* active-call.png in Resources */,
+				42732E376C28493F9D1B8BFC /* arrow-forward.png in Resources */,
+				B18451B5598041769835285E /* backspace.png in Resources */,
+				C73EFF4B65F44F0684A39C14 /* bluetooth-active.png in Resources */,
+				A524847D82574F6B80C47D1B /* bluetooth.png in Resources */,
+				C2AFEFAEFE3E45DA9AA3CFBA /* call-selected.png in Resources */,
+				B76DB89EFBD84963846AF2D6 /* call.png in Resources */,
+				7CFA9BC376DB42C6B73CBC4E /* dialpad-dark.png in Resources */,
+				E6CFF6484837457D88F91BF8 /* dialpad-selected.png in Resources */,
+				822A9822DC3749DC82E171EE /* end-call.png in Resources */,
+				82A808D4695246F1899CB790 /* error.png in Resources */,
+				939757EC35AE404A93B2ADF2 /* hide-dialpad.png in Resources */,
+				EF20D27749054A89AB404D7D /* make-call.png in Resources */,
+				B3961184F72B403E8F92373A /* mute-active.png in Resources */,
+				F59EE22584E4411BAB51AAB1 /* mute.png in Resources */,
+				E23AD9E90DFB414A9663D8D8 /* speaker-active.png in Resources */,
+				999D91F934C34800B86F1344 /* speaker.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

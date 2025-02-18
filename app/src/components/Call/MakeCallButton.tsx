@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, StyleSheet } from 'react-native';
 import Button, { type Props as ButtonProps } from '../../components/Button';
 
-const MakeOutgoingCallSource = require('../../../assets/icons/make-call.png');
+const MakeOutgoingCallSource = require('../../assets/icons/make-call.png');
 
 export type Props = Pick<ButtonProps, 'disabled' | 'onPress'>;
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, StyleSheet } from 'react-native';
 import Button, { type Props as ButtonProps } from '../../components/Button';
 
-const HideDialpadSource = require('../../../assets/icons/hide-dialpad.png');
+const HideDialpadSource = require('../../assets/icons/hide-dialpad.png');
 
 export type Props = Pick<ButtonProps, 'disabled' | 'onPress'>;
 

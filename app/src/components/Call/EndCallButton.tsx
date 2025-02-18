@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, StyleSheet } from 'react-native';
 import Button, { type Props as ButtonProps } from '../../components/Button';
 
-const HangupSource = require('../../../assets/icons/end-call.png');
+const HangupSource = require('../../assets/icons/end-call.png');
 
 export type Props = Pick<ButtonProps, 'disabled' | 'onPress'>;
 

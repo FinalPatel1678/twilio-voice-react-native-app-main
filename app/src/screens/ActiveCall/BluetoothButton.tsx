@@ -2,8 +2,8 @@ import React from 'react';
 import { Image, StyleSheet } from 'react-native';
 import Button, { type Props as ButtonProps } from '../../components/Button';
 
-const BluetoothSource = require('../../../assets/icons/bluetooth.png');
-const ActiveBluetoothSource = require('../../../assets/icons/bluetooth-active.png');
+const BluetoothSource = require('../../assets/icons/bluetooth.png');
+const ActiveBluetoothSource = require('../../assets/icons/bluetooth-active.png');
 
 export type Props = {
   active?: boolean;
