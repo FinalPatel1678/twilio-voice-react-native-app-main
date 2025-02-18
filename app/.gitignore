@@ -72,3 +72,6 @@ yarn-error.log
 ###
 # Google Services
 google-services.json
+
+
+index.android.bundle

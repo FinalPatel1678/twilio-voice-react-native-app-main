@@ -18,6 +18,7 @@ import { createTypedAsyncThunk, generateThunkActionTypes } from '../../common';
 import { callMap } from '../../../util/voice';
 import { settlePromise } from '../../../util/settlePromise';
 import { makeOutgoingCall } from './outgoingCall';
+import { STORAGE_KEYS } from '../../../util/constants';
 
 const sliceName = 'activeCall' as const;
 
@@ -50,7 +51,7 @@ export const handleCall = createTypedAsyncThunk<
     let customParameters: OutgoingCallParameters | undefined;
     if (typeof callInfo.sid === 'string') {
       const getItemResult = await settlePromise(
-        AsyncStorage.getItem(callInfo.sid),
+        AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_CALLS),
       );
       if (getItemResult.status === 'rejected') {
         return rejectWithValue({
@@ -59,9 +60,10 @@ export const handleCall = createTypedAsyncThunk<
         });
       }
       try {
-        customParameters = getItemResult.value
+        const calls = getItemResult.value
           ? JSON.parse(getItemResult.value)
-          : undefined;
+          : {};
+        customParameters = calls[callInfo.sid];
       } catch (exception) {
         return rejectWithValue({
           reason: 'JSON_PARSE_THREW',
@@ -86,7 +88,11 @@ export const handleCall = createTypedAsyncThunk<
       if (typeof callSid !== 'string') {
         return;
       }
-      AsyncStorage.removeItem(callSid);
+      AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_CALLS).then((stored) => {
+        const calls = stored ? JSON.parse(stored) : {};
+        delete calls[callSid];
+        AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_CALLS, JSON.stringify(calls));
+      });
     });
 
     Object.values(TwilioCall.Event).forEach((callEvent) => {

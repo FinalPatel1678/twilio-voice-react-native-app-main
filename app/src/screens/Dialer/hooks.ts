@@ -6,8 +6,6 @@ import { useTypedDispatch } from '../../store/common';
 import { makeOutgoingCall as makeOutgoingCallAction } from '../../store/voice/call/outgoingCall';
 import { type StackNavigationProp } from '../types';
 import { useActiveCall } from '../../hooks/activeCall';
-import { useSelector } from 'react-redux';
-import { State } from '../../store/app';
 
 /**
  * Hook for the dialpad.
@@ -66,7 +64,7 @@ const useDialpad = (
  * @param to - The recipient. Either a string of numbers for PSTN calls or
  * @returns - Handler for making an outgoing call.
  */
-const useMakeOutgoingCall = (
+const useMakeOutgoingCall = async (
   dispatch: ReturnType<typeof useTypedDispatch>,
   navigation: StackNavigationProp<'App'>,
   outgoingNumber: string,
@@ -74,14 +72,7 @@ const useMakeOutgoingCall = (
 ) => {
   const to = outgoingNumber;
 
-  const accessToken = useSelector((state: State) => state.voice.accessToken);
-
   const handle = React.useCallback(async () => {
-
-    if (!(accessToken.status === 'fulfilled')) {
-      return;
-    }
-
     const callAction = await dispatch(
       makeOutgoingCallAction({
         to,
@@ -93,7 +84,7 @@ const useMakeOutgoingCall = (
     }
 
     navigation.navigate('Call', {});
-  }, [accessToken.status, dispatch, navigation, to]);
+  }, [dispatch, navigation, to]);
 
   const isDisabled = React.useMemo(() => {
     return isDialerDisabled || outgoingNumber.length === 0;

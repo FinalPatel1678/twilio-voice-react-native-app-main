@@ -212,17 +212,6 @@ const AutoDialer: React.FC = () => {
         ]);
 
         console.log('[AutoDialer] Successfully saved state');
-
-        // Verify the save by reading back
-        const [savedDialerData, savedFileData] = await Promise.all([
-          AsyncStorage.getItem('dialerState'),
-          AsyncStorage.getItem('previousFile'),
-        ]);
-
-        console.log('[AutoDialer] Verification - Read back saved data:', {
-          dialerData: savedDialerData,
-          fileData: savedFileData,
-        });
       } catch (error) {
         console.error('[AutoDialer] Error saving state:', error);
         setErrorMessage('Failed to save state');

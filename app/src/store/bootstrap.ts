@@ -8,7 +8,7 @@ import { getNavigate } from '../util/navigation';
 import { settlePromise } from '../util/settlePromise';
 import { voice } from '../util/voice';
 import { getPhoneNumbers } from './voice/phoneNumbers';
-import { getAccessToken } from './voice/accessToken';
+import { STORAGE_KEYS } from '../util/constants';
 
 /**
  * Bootstrap calls. Retrieves all existing calls.
@@ -40,25 +40,29 @@ export const bootstrapCalls = createTypedAsyncThunk<
     }
 
     const calls = callsResult.value;
-    // Get all the call sids stored in async storage.
-    const storedCallSids = new Set(await AsyncStorage.getAllKeys());
+    // Get stored calls
+    const storedCallsStr = await AsyncStorage.getItem(
+      STORAGE_KEYS.ACTIVE_CALLS,
+    );
+    const storedCalls = storedCallsStr ? JSON.parse(storedCallsStr) : {};
+
     for (const call of calls.values()) {
       await dispatch(handleCall({ call }));
-
-      // If the call is still active, the native layer will still have it
-      // cached.
       const callSid = call.getSid();
-      if (callSid) {
-        // Mark a call as still active, and therefore keep it in async storage.
-        storedCallSids.delete(callSid);
+      if (callSid && storedCalls[callSid]) {
+        delete storedCalls[callSid]; // Remove active calls from cleanup list
       }
     }
 
-    /**
-     * Free the AsyncStorage if there are some calls in AsyncStorage that are
-     * no longer tracked by the native layer.
-     */
-    await AsyncStorage.multiRemove(Array.from(storedCallSids.values()));
+    // Clean up inactive calls
+    if (Object.keys(storedCalls).length === 0) {
+      await AsyncStorage.removeItem(STORAGE_KEYS.ACTIVE_CALLS);
+    } else {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.ACTIVE_CALLS,
+        JSON.stringify(storedCalls),
+      );
+    }
   },
 );
 
@@ -136,7 +140,6 @@ export const bootstrapPhoneNumbersAndTokenActionTypes =
 export const bootstrapPhoneNumbersAndToken = createTypedAsyncThunk(
   bootstrapPhoneNumbersAndTokenActionTypes.prefix,
   async (_, { dispatch }) => {
-    await dispatch(getAccessToken());
     await dispatch(getPhoneNumbers());
   },
 );

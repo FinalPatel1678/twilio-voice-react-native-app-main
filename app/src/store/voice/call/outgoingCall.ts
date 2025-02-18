@@ -2,10 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { miniSerializeError, type SerializedError } from '@reduxjs/toolkit';
 import { Call as TwilioCall } from '@twilio/voice-react-native-sdk';
 import { voice, callMap } from '../../../util/voice';
-import { settlePromise } from '../../../util/settlePromise';
 import { createTypedAsyncThunk, generateThunkActionTypes } from '../../common';
 import { type CallInfo, getCallInfo } from './';
 import { setActiveCallInfo } from './activeCall';
+import { STORAGE_KEYS } from '../../../util/constants';
+import { getAccessToken } from '../accessToken';
 
 export type MakeOutgoingCallRejectValue =
   | {
@@ -27,108 +28,79 @@ export const makeOutgoingCall = createTypedAsyncThunk<
     console.log('makeOutgoingCall: started', { requestId });
 
     const state = getState();
-    const token = state.voice.accessToken;
     const phoneNumbers = state.voice.phoneNumbers.phoneNumbers;
 
-    if (token?.status !== 'fulfilled') {
-      console.error('makeOutgoingCall: token unfulfilled');
-      return rejectWithValue({ reason: 'TOKEN_UNFULFILLED' });
-    }
-
-    if (!phoneNumbers || phoneNumbers.length === 0) {
-      console.error('makeOutgoingCall: no phone numbers available');
+    if (!phoneNumbers?.length) {
       return rejectWithValue({ reason: 'PHONE_NUMBERS_UNAVAILABLE' });
     }
 
     const Caller_Id =
       phoneNumbers[Math.floor(Math.random() * phoneNumbers.length)];
-    console.log('makeOutgoingCall: calling to', { to, Caller_Id });
 
     try {
-      const outgoingCallResult = await settlePromise(
-        voice.connect(token.value, {
-          params: {
-            To: to,
-            Caller_Id: Caller_Id,
-          },
-        }),
-      );
-      if (outgoingCallResult.status === 'rejected') {
-        console.error(
-          'makeOutgoingCall: native module rejected',
-          outgoingCallResult.reason,
-        );
-        return rejectWithValue({
-          reason: 'NATIVE_MODULE_REJECTED',
-          error: miniSerializeError(outgoingCallResult.reason),
-        });
-      }
+      const makeCall = async (tokenValue: string, isRetry = false) => {
+        try {
+          const outgoingCall = await voice.connect(tokenValue, {
+            params: { To: to, Caller_Id },
+          });
 
-      const outgoingCall = outgoingCallResult.value;
-      console.log('makeOutgoingCall: call connected', { outgoingCall });
+          const callInfo = getCallInfo(outgoingCall);
+          callMap.set(requestId, outgoingCall);
 
-      const callInfo = getCallInfo(outgoingCall);
-      callMap.set(requestId, outgoingCall);
+          // Handle token invalidation
+          outgoingCall.on(TwilioCall.Event.ConnectFailure, async (error) => {
+            if (error.code === 20101) {
+              const newToken = await getAccessToken();
+              if (newToken) {
+                return makeCall(newToken);
+              }
+            }
+            console.error('ConnectFailure:', error);
+          });
 
-      outgoingCall.on(TwilioCall.Event.ConnectFailure, (error) => {
-        console.error('ConnectFailure:', error);
-        if (error.code === 20107) {
-          console.error(
-            'Invalid Access Token signature. Please check the token generation process.',
-          );
+          // Handle call state updates
+          Object.values(TwilioCall.Event).forEach((event) => {
+            outgoingCall.on(event, () => {
+              dispatch(
+                setActiveCallInfo({
+                  id: requestId,
+                  info: getCallInfo(outgoingCall),
+                }),
+              );
+            });
+          });
+
+          // Store call info when connected
+          outgoingCall.once(TwilioCall.Event.Connected, () => {
+            const callSid = outgoingCall.getSid();
+            if (typeof callSid === 'string') {
+              AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_CALLS).then((stored) => {
+                const calls = stored ? JSON.parse(stored) : {};
+                calls[callSid] = { to };
+                AsyncStorage.setItem(
+                  STORAGE_KEYS.ACTIVE_CALLS,
+                  JSON.stringify(calls),
+                );
+              });
+            }
+          });
+
+          return callInfo;
+        } catch (error: any) {
+          // If token is invalid and this isn't a retry attempt
+          if (error?.code === 20101 && !isRetry) {
+            const newToken = await getAccessToken();
+            return makeCall(newToken, true);
+          }
+          throw error;
         }
-      });
-      outgoingCall.on(TwilioCall.Event.Reconnecting, (error) =>
-        console.error('Reconnecting:', error),
-      );
-      outgoingCall.on(TwilioCall.Event.Disconnected, (error) => {
-        // The type of error here is "TwilioError | undefined".
-        if (error) {
-          console.error('Disconnected:', error);
-        }
+      };
 
-        const callSid = outgoingCall.getSid();
-        if (typeof callSid !== 'string') {
-          return;
-        }
-        AsyncStorage.removeItem(callSid);
-      });
-
-      Object.values(TwilioCall.Event).forEach((callEvent) => {
-        outgoingCall.on(callEvent, () => {
-          console.log(`makeOutgoingCall: event ${callEvent}`, { outgoingCall });
-          dispatch(
-            setActiveCallInfo({
-              id: requestId,
-              info: getCallInfo(outgoingCall),
-            }),
-          );
-        });
-      });
-
-      outgoingCall.once(TwilioCall.Event.Connected, () => {
-        const callSid = outgoingCall.getSid();
-        if (typeof callSid !== 'string') {
-          return;
-        }
-        AsyncStorage.setItem(callSid, JSON.stringify({ to }));
-
-        const info = getCallInfo(outgoingCall);
-        if (typeof info.initialConnectedTimestamp === 'undefined') {
-          info.initialConnectedTimestamp = Date.now();
-        }
-        dispatch(setActiveCallInfo({ id: requestId, info }));
-      });
-
-      console.log('makeOutgoingCall: completed', { callInfo });
-      return callInfo;
+      // Get token from storage first or fetch new one
+      const token = await getAccessToken();
+      return await makeCall(token);
     } catch (error) {
-      console.error('makeOutgoingCall: event connectFailure', error);
-      if (error.code === 20107) {
-        console.error(
-          'Invalid Access Token signature. Please check the token generation process.',
-        );
-      }
+      console.error('makeOutgoingCall failed:', error);
       return rejectWithValue({
         reason: 'NATIVE_MODULE_REJECTED',
         error: miniSerializeError(error),
