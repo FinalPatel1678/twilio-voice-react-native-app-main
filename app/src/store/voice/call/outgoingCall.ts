@@ -25,12 +25,13 @@ export const makeOutgoingCall = createTypedAsyncThunk<
 >(
   makeOutgoingCallActionTypes.prefix,
   async ({ to }, { getState, dispatch, rejectWithValue, requestId }) => {
-    console.log('makeOutgoingCall: started', { requestId });
+    console.log('makeOutgoingCall: started', { requestId, to });
 
     const state = getState();
     const phoneNumbers = state.voice.phoneNumbers.phoneNumbers;
 
     if (!phoneNumbers?.length) {
+      console.error('No phone numbers available');
       return rejectWithValue({ reason: 'PHONE_NUMBERS_UNAVAILABLE' });
     }
 
@@ -40,40 +41,47 @@ export const makeOutgoingCall = createTypedAsyncThunk<
     try {
       const makeCall = async (tokenValue: string, isRetry = false) => {
         try {
+          console.log('Connecting call...', { to, Caller_Id, isRetry });
           const outgoingCall = await voice.connect(tokenValue, {
             params: { To: to, Caller_Id },
           });
 
-          const callInfo = getCallInfo(outgoingCall);
-          callMap.set(requestId, outgoingCall);
-
-          // Handle token invalidation
+          // Set up event listeners before doing anything else
           outgoingCall.on(TwilioCall.Event.ConnectFailure, async (error) => {
-            if (error.code === 20101) {
-              const newToken = await getAccessToken();
+            console.log('ConnectFailure event:', error);
+            if (!isRetry && (error.code === 20101 || error.code === 20104)) {
+              console.log('Token expired, retrying with new token...');
+              const newToken = await getAccessToken(true);
               if (newToken) {
-                return makeCall(newToken);
+                return makeCall(newToken, true);
               }
             }
-            console.error('ConnectFailure:', error);
+            console.error('Call connection failed:', error);
           });
 
-          // Handle call state updates
-          Object.values(TwilioCall.Event).forEach((event) => {
-            outgoingCall.on(event, () => {
-              dispatch(
-                setActiveCallInfo({
-                  id: requestId,
-                  info: getCallInfo(outgoingCall),
-                }),
-              );
-            });
-          });
-
-          // Store call info when connected
-          outgoingCall.once(TwilioCall.Event.Connected, () => {
+          outgoingCall.on(TwilioCall.Event.Disconnected, (error) => {
+            console.log('Call disconnected:', error);
+            // Cleanup call from storage
             const callSid = outgoingCall.getSid();
-            if (typeof callSid === 'string') {
+            if (callSid) {
+              AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_CALLS).then((stored) => {
+                if (stored) {
+                  const calls = JSON.parse(stored);
+                  delete calls[callSid];
+                  AsyncStorage.setItem(
+                    STORAGE_KEYS.ACTIVE_CALLS,
+                    JSON.stringify(calls),
+                  );
+                }
+              });
+            }
+          });
+
+          // Monitor call state changes
+          outgoingCall.on(TwilioCall.Event.Connected, () => {
+            console.log('Call connected successfully');
+            const callSid = outgoingCall.getSid();
+            if (callSid) {
               AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_CALLS).then((stored) => {
                 const calls = stored ? JSON.parse(stored) : {};
                 calls[callSid] = { to };
@@ -85,18 +93,32 @@ export const makeOutgoingCall = createTypedAsyncThunk<
             }
           });
 
-          return callInfo;
+          // Update call info for all events
+          Object.values(TwilioCall.Event).forEach((event) => {
+            outgoingCall.on(event, () => {
+              const callInfo = getCallInfo(outgoingCall);
+              console.log('Call state updated:', {
+                event,
+                state: callInfo.state,
+              });
+              dispatch(setActiveCallInfo({ id: requestId, info: callInfo }));
+            });
+          });
+
+          callMap.set(requestId, outgoingCall);
+          return getCallInfo(outgoingCall);
         } catch (error: any) {
-          // If token is invalid and this isn't a retry attempt
-          if (error?.code === 20101 && !isRetry) {
-            const newToken = await getAccessToken();
-            return makeCall(newToken, true);
+          console.error('Call connection error:', error);
+          if (!isRetry && (error?.code === 20101 || error?.code === 20104)) {
+            const newToken = await getAccessToken(true);
+            if (newToken) {
+              return makeCall(newToken, true);
+            }
           }
           throw error;
         }
       };
 
-      // Get token from storage first or fetch new one
       const token = await getAccessToken();
       return await makeCall(token);
     } catch (error) {

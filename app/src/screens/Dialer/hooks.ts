@@ -64,7 +64,8 @@ const useDialpad = (
  * @param to - The recipient. Either a string of numbers for PSTN calls or
  * @returns - Handler for making an outgoing call.
  */
-const useMakeOutgoingCall = async (
+const useMakeOutgoingCall = (
+  // removed 'async' from here
   dispatch: ReturnType<typeof useTypedDispatch>,
   navigation: StackNavigationProp<'App'>,
   outgoingNumber: string,
@@ -73,6 +74,7 @@ const useMakeOutgoingCall = async (
   const to = outgoingNumber;
 
   const handle = React.useCallback(async () => {
+    // async remains here
     const callAction = await dispatch(
       makeOutgoingCallAction({
         to,
