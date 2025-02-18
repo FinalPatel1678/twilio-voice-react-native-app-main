@@ -252,44 +252,38 @@ const AutoDialer: React.FC = () => {
       const response = await fetch(fileUri);
       const fileContent = await response.text();
 
-      const parsedData = parse(fileContent, {
-        header: true,
-        skipEmptyLines: true,
-      });
-
-      if (!parsedData.meta.fields?.includes('phoneNumber')) {
-        throw new Error('CSV must have a "phoneNumber" column');
-      }
-
-      const phoneNumbers = parsedData.data
-        .map((row: any) => row.phoneNumber?.trim())
-        .filter((number: string) => {
-          if (!number) {
+      // Split content by common delimiters (comma or semicolon)
+      const numbers = fileContent
+        .split(/[,;]/)
+        .map((num) => num.trim())
+        .filter((num) => {
+          if (!num) {
             return false;
           }
-          const isValid = isValidPhoneNumber(number);
-          return isValid;
+          // Remove any newlines, spaces, or carriage returns
+          const cleanNumber = num.replace(/[\n\r\s]/g, '');
+          return isValidPhoneNumber(cleanNumber);
         });
 
-      if (phoneNumbers.length === 0) {
-        throw new Error('No valid phone numbers found in the CSV');
+      if (numbers.length === 0) {
+        throw new Error('No valid phone numbers found in the file');
       }
 
       const fileData = {
         fileName: selectedFileName,
-        phoneNumbers,
+        phoneNumbers: numbers,
       };
 
       await AsyncStorage.setItem('previousFile', JSON.stringify(fileData));
 
-      setParsedPhoneNumbers(phoneNumbers);
+      setParsedPhoneNumbers(numbers);
       setFileName(selectedFileName);
     } catch (err) {
       if (err.code === 'DOCUMENT_PICKER_CANCELED') {
         console.log('User cancelled the picker');
       } else {
         setErrorMessage(
-          err.message || 'Failed to load CSV file. Please try again.',
+          err.message || 'Failed to load file. Please try again.',
         );
       }
     } finally {
