@@ -6,7 +6,7 @@ react {}
 def enableProguardInReleaseBuilds = false
 def jscFlavor = 'org.webkit:android-jsc:+'
 
-// Setup for react-native-config package: https://github.com/luggit/react-native-config
+// Setup for react-native-config package
 apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
 
 android {
@@ -40,6 +40,12 @@ android {
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
+    }
+
+    // Disabling Google Play services if not needed
+    packagingOptions {
+        exclude 'META-INF/androidx.activity_activity.version'
+        exclude 'META-INF/androidx.lifecycle_lifecycle-runtime.version'
     }
 }
 

@@ -9,7 +9,6 @@ buildscript {
 
         kotlinVersion = "1.8.0"
 
-        firebaseAppDistribution = "5.0.0"
 
         // use the same NDK version as the Voice SDK
         ndkVersion = "25.2.9519653"
