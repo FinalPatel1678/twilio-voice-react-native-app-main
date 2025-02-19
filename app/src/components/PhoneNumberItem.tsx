@@ -1,13 +1,5 @@
-import React, { useRef } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  Alert,
-} from 'react-native';
-import { colors } from '../theme/colors';
+import React from 'react';
+import { Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 
 interface PhoneNumberItemProps {
   phoneNumber: string;

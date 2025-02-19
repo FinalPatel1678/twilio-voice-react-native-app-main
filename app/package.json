@@ -17,7 +17,6 @@
     "@react-navigation/native-stack": "^6.9.8",
     "@reduxjs/toolkit": "^1.9.1",
     "@twilio/voice-react-native-sdk": "1.2.0",
-    "papaparse": "^5.5.2",
     "react": "18.2.0",
     "react-native": "0.72.17",
     "react-native-config": "^1.5.0",
@@ -43,7 +42,6 @@
     "eslint": "^8.19.0",
     "metro-react-native-babel-preset": "^0.76.9",
     "prettier": "^2.4.1",
-    "twilio": "^4.14.0",
     "typescript": "4.8.4"
   }
 }

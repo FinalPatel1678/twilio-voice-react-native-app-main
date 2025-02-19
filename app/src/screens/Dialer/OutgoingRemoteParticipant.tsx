@@ -7,7 +7,7 @@ export type Props = {
 
 const OutgoingRemoteParticipant: React.FC<Props> = ({ outgoingNumber }) => {
   const formattedNumber = React.useMemo(() => {
-    return outgoingNumber.length > 0 ? `+${outgoingNumber}` : '';
+    return outgoingNumber.length > 0 ? outgoingNumber : '';
   }, [outgoingNumber]);
   return (
     <View style={styles.container}>
@@ -21,19 +21,23 @@ const OutgoingRemoteParticipant: React.FC<Props> = ({ outgoingNumber }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {},
+  container: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: {
-    color: 'black',
-    fontSize: 24,
+    color: '#000000',
+    fontSize: 30, // Increased from 24
+    fontWeight: '400',
     textAlign: 'center',
   },
   subtitle: {
-    color: 'black',
+    color: '#8E8E93',
     fontSize: 12,
     textAlign: 'center',
   },
   number: {
-    padding: 10.5,
   },
 });
 

@@ -9,6 +9,15 @@ import useDialer from './hooks';
 const Dialer: React.FC = () => {
   const { dialpad, makeCall, outgoing } = useDialer();
 
+  const handleLongPress = React.useCallback(
+    (value: string) => {
+      if (value === '+') {
+        dialpad.input.handle(value);
+      }
+    },
+    [dialpad.input]
+  );
+
   const backspaceButton = React.useMemo(
     () =>
       dialpad.backspace.isDisabled ? (
@@ -28,6 +37,7 @@ const Dialer: React.FC = () => {
         <Dialpad
           disabled={dialpad.input.isDisabled}
           onPress={dialpad.input.handle}
+          onLongPress={handleLongPress}
         />
       </View>
       <View style={styles.buttons}>
@@ -46,22 +56,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'column',
     height: '100%',
+    backgroundColor: '#ffffff',
   },
   remoteParticipant: {
-    padding: 16,
+    padding: 12,
     height: '25%',
     flexDirection: 'column-reverse',
+    width: '100%',
   },
   dialpad: {
     height: '55%',
+    width: '100%',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
   },
   buttons: {
     display: 'flex',
     flexDirection: 'row',
     height: '20%',
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    gap: 16,
+    paddingTop: 8,
   },
   emptyButton: {
-    width: 96,
+    width: 72,
   },
 });
 

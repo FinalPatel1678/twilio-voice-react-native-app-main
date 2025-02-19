@@ -14,12 +14,15 @@ import {
 import { match } from 'ts-pattern';
 import { pick, types } from '@react-native-documents/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { parse } from 'papaparse';
 import { useActiveCall } from '../hooks/activeCall';
 import { makeOutgoingCall } from '../store/voice/call/outgoingCall';
 import PhoneNumberItem from '../components/PhoneNumberItem';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { colors } from '../theme/colors';
+import {
+  getPhoneNumbers,
+  setSelectedNumber,
+} from '../store/voice/phoneNumbers';
 
 const isValidPhoneNumber = (number: string) => {
   const phoneRegex = /^\+?[1-9]\d{1,14}$/;
@@ -40,13 +43,17 @@ const AutoDialer: React.FC = () => {
     null,
   );
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [callDuration, setCallDuration] = useState<number>(86400); // Default 24 hours
   const activeCall = useActiveCall();
   const dispatch = useDispatch();
-
+  const {
+    phoneNumbers,
+    selectedNumber,
+    loading: phoneNumbersLoading,
+  } = useSelector((state) => state.voice.phoneNumbers);
   const fadeAnim = useState(new Animated.Value(1))[0];
   const progressValue = useState(new Animated.Value(0))[0];
-
   const isCallActive = React.useMemo(
     () =>
       match(activeCall)
@@ -58,6 +65,14 @@ const AutoDialer: React.FC = () => {
         .otherwise(() => false),
     [activeCall],
   );
+
+  const handleDurationChange = (text: string) => {
+    const numValue = Number(text);
+    if (isNaN(numValue) || numValue < 0) {
+      return;
+    }
+    setCallDuration(numValue);
+  };
 
   useEffect(() => {
     if (!isCallActive && dialerStatus === 'running') {
@@ -102,12 +117,17 @@ const AutoDialer: React.FC = () => {
     const nextNumber = parsedPhoneNumbers[currentIndex];
     console.log(`[AutoDialer] Calling number: ${nextNumber}`);
     setCurrentPhoneNumber(nextNumber);
+
     try {
-      await dispatch(makeOutgoingCall({ to: nextNumber }));
+      await dispatch(
+        makeOutgoingCall({
+          to: nextNumber,
+          duration: callDuration,
+        }),
+      );
       setCurrentIndex((prev) => prev + 1);
     } catch (error) {
       console.error(`[AutoDialer] Failed to call ${nextNumber}:`, error);
-      setCurrentIndex((prev) => prev + 1);
       makeNextCall();
     }
 
@@ -124,9 +144,10 @@ const AutoDialer: React.FC = () => {
       console.log('[AutoDialer] Loading previous state');
       setIsInitialLoading(true);
       try {
-        const [fileData, dialerData] = await Promise.all([
+        const [fileData, dialerData, savedNumber] = await Promise.all([
           AsyncStorage.getItem('previousFile'),
           AsyncStorage.getItem('dialerState'),
+          AsyncStorage.getItem('selectedNumber'),
         ]);
 
         console.log('[AutoDialer] Raw stored data:', {
@@ -161,6 +182,7 @@ const AutoDialer: React.FC = () => {
               setCurrentPhoneNumber(
                 parsedDialerState.currentPhoneNumber || null,
               );
+              setCallDuration(parsedDialerState.callDuration || 86400);
               console.log('[AutoDialer] Successfully restored dialer state');
             }
           } catch (parseError) {
@@ -169,6 +191,10 @@ const AutoDialer: React.FC = () => {
               parseError,
             );
           }
+        }
+
+        if (savedNumber) {
+          dispatch(setSelectedNumber(savedNumber));
         }
       } catch (error) {
         console.error('[AutoDialer] Error loading state:', error);
@@ -192,6 +218,7 @@ const AutoDialer: React.FC = () => {
           currentIndex,
           delay,
           currentPhoneNumber,
+          callDuration,
         };
 
         const fileData =
@@ -227,28 +254,27 @@ const AutoDialer: React.FC = () => {
     delay,
     currentPhoneNumber,
     fileName,
-    parsedPhoneNumbers,
     isInitialLoading,
+    parsedPhoneNumbers,
+    callDuration,
   ]);
 
   const handleFilePick = async () => {
     setIsLoading(true);
     setErrorMessage(null);
+    setDialerStatus('idle');
     try {
-      setDialerStatus('idle');
-
       const res = await pick({
-        type: [types.csv],
         allowMultiSelection: false,
+        type: [types.csv],
       });
 
       if (!res || res.length === 0) {
         throw new Error('No file selected');
       }
 
-      const selectedFileName = res[0].name;
       const fileUri = res[0].uri;
-
+      const selectedFileName = res[0].name;
       const response = await fetch(fileUri);
       const fileContent = await response.text();
 
@@ -367,6 +393,75 @@ const AutoDialer: React.FC = () => {
     }
   };
 
+  const handleRefreshNumbers = () => {
+    dispatch(getPhoneNumbers(true)); // Force refresh
+  };
+
+  const handleNumberSelect = (number: string) => {
+    dispatch(setSelectedNumber(number));
+    AsyncStorage.setItem('selectedNumber', number);
+  };
+
+  const renderPhoneNumberSelector = () => (
+    <View style={styles.phoneNumberSection}>
+      <View style={styles.phoneNumberHeader}>
+        <TouchableOpacity
+          style={styles.dropdownContainer}
+          onPress={() => setShowDropdown(!showDropdown)}>
+          {phoneNumbersLoading ? (
+            <ActivityIndicator
+              size="small"
+              color={colors.button.primary}
+              style={styles.dropdownLoader}
+            />
+          ) : (
+            <Text style={styles.numberText} numberOfLines={1}>
+              {selectedNumber || 'Select a number to call from'}
+            </Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.refreshButton,
+            phoneNumbersLoading && styles.buttonDisabled,
+          ]}
+          onPress={handleRefreshNumbers}
+          disabled={phoneNumbersLoading}>
+          <Text style={styles.buttonText}>Refresh</Text>
+        </TouchableOpacity>
+      </View>
+      {showDropdown && !phoneNumbersLoading && (
+        <View style={styles.dropdownMenu}>
+          {phoneNumbers.map((number) => (
+            <TouchableOpacity
+              key={number}
+              style={[
+                styles.dropdownOption,
+                selectedNumber === number && styles.selectedOption,
+              ]}
+              onPress={() => {
+                handleNumberSelect(number);
+                setShowDropdown(false);
+              }}>
+              <Text
+                style={[
+                  styles.dropdownOptionText,
+                  selectedNumber === number && styles.selectedOptionText,
+                ]}>
+                {number}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+      {showDropdown && phoneNumbersLoading && (
+        <View style={[styles.dropdownMenu, styles.loadingDropdown]}>
+          <ActivityIndicator size="small" color={colors.button.primary} />
+        </View>
+      )}
+    </View>
+  );
+
   if (isInitialLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -409,19 +504,31 @@ const AutoDialer: React.FC = () => {
       </View>
       {fileName && <Text style={styles.subtitle}>File: {fileName}</Text>}
       {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
+      {renderPhoneNumberSelector()}
 
       <View style={styles.controls}>
-        <View style={styles.delayRow}>
-          <Text style={styles.delayLabel}>Delay (s):</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="1"
-            keyboardType="numeric"
-            value={delay.toString()}
-            onChangeText={handleDelayChange}
-          />
+        <View style={styles.inputsContainer}>
+          <View style={styles.inputRow}>
+            <Text style={styles.inputLabel}>Delay (s):</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="1"
+              keyboardType="numeric"
+              value={delay.toString()}
+              onChangeText={handleDelayChange}
+            />
+          </View>
+          <View style={styles.inputRow}>
+            <Text style={styles.inputLabel}>Duration (s):</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="60"
+              keyboardType="numeric"
+              value={callDuration.toString()}
+              onChangeText={handleDurationChange}
+            />
+          </View>
         </View>
-
         <View style={styles.buttonRow}>
           {dialerStatus === 'idle' && (
             <TouchableOpacity
@@ -512,18 +619,14 @@ const styles = StyleSheet.create({
   },
   uploadSection: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 8,
     gap: 8,
   },
   button: {
     padding: 10,
-    borderRadius: 4,
     backgroundColor: '#007AFF',
+    borderRadius: 4,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  uploadButton: {
-    flex: 1,
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -534,7 +637,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666666',
     marginBottom: 8,
   },
@@ -544,17 +647,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   controls: {
-    marginBottom: 16,
+    marginBottom: 8,
   },
-  delayRow: {
+  inputsContainer: {
+    marginBottom: 8,
+  },
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
   },
-  delayLabel: {
+  inputLabel: {
     fontSize: 14,
-    width: 80,
     color: '#000000',
+    width: 100,
   },
   input: {
     flex: 1,
@@ -568,17 +674,21 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   actionButton: {
     flex: 1,
     backgroundColor: '#34C759',
+    padding: 10,
+    borderRadius: 4,
+    alignItems: 'center',
   },
   statusBar: {
-    marginBottom: 14,
     padding: 10,
     backgroundColor: '#F2F2F7',
     borderRadius: 4,
+    marginTop: 8,
   },
   statusText: {
     fontSize: 14,
@@ -598,11 +708,88 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     backgroundColor: '#FF3B30',
-    minWidth: 100,
+    padding: 12,
+    borderRadius: 4,
+    minWidth: 70,
+    alignItems: 'center',
   },
   stopButton: {
     flex: 1,
     backgroundColor: '#FF3B30',
+    padding: 10,
+    borderRadius: 4,
+    alignItems: 'center',
+  },
+  phoneNumberSection: {
+    marginBottom: 12,
+  },
+  phoneNumberHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dropdownContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  numberText: {
+    color: '#666666',
+    fontSize: 16,
+    flex: 1,
+  },
+  refreshButton: {
+    backgroundColor: '#007AFF',
+    padding: 10,
+    borderRadius: 4,
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  dropdownOption: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+  },
+  selectedOption: {
+    backgroundColor: '#F2F2F7',
+  },
+  dropdownOptionText: {
+    fontSize: 16,
+    color: '#000000',
+    fontFamily: 'System', // Use system font for better number rendering
+    letterSpacing: 0.5, // Improve number readability
+  },
+  selectedOptionText: {
+    color: '#007AFF',
+  },
+  loadingDropdown: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dropdownLoader: {
+    marginRight: 8,
   },
 });
 

@@ -1,57 +1,84 @@
 import React from 'react';
-import { StyleSheet, Text } from 'react-native';
-import Button, { type Props as ButtonProps } from '../Button';
+import { StyleSheet, Text, Pressable, View } from 'react-native';
 import { colors } from '../../theme/colors';
 
 export type Props = {
   title: string;
   subtitle: string;
-} & Pick<ButtonProps, 'disabled' | 'onPress'>;
+  disabled?: boolean;
+  onPress?: () => void;
+  onLongPress?: () => void;
+  testID?: string;
+};
 
 const DialpadButton: React.FC<Props> = ({
   disabled,
   title,
   subtitle,
   onPress,
-}) => (
-  <Button
-    disabled={disabled}
-    size={96}
-    onPress={onPress}
-    style={styles.button}
-    pressedStyle={styles.buttonPressed}
-    testID={`dialpad_button_${title}`}>
-    <Text style={[styles.title, disabled && styles.disabled]}>{title}</Text>
-    <Text style={[styles.subtitle, disabled && styles.disabled]}>{subtitle}</Text>
-  </Button>
-);
+  onLongPress,
+  testID,
+}) => {
+  const [isPressed, setIsPressed] = React.useState(false);
+
+  return (
+    <Pressable
+      disabled={disabled}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={500} // Add this line to make long press more responsive
+      onPressIn={() => setIsPressed(true)}
+      onPressOut={() => setIsPressed(false)}
+      testID={testID}
+      style={({ pressed }) => [
+        styles.button,
+        pressed && styles.buttonPressed,
+        disabled && styles.buttonDisabled,
+      ]}>
+      <View style={styles.content}>
+        <Text style={[styles.title, disabled && styles.textDisabled]}>
+          {title}
+        </Text>
+        {subtitle && (
+          <Text style={[styles.subtitle, disabled && styles.textDisabled]}>
+            {subtitle}
+          </Text>
+        )}
+      </View>
+    </Pressable>
+  );
+};
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: colors.surface,
-    borderRadius: 48,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
+    width: '100%',
+    aspectRatio: 1.2,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   buttonPressed: {
-    backgroundColor: colors.divider,
-    transform: [{ scale: 0.98 }],
+    backgroundColor: '#F2F2F7',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  content: {
+    alignItems: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: colors.text.primary,
+    fontSize: 24,
+    color: '#000000',
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    marginTop: 2,
+    fontSize: 10,
+    color: '#8E8E93',
+    marginTop: 1,
+    textAlign: 'center',
   },
-  disabled: {
-    color: colors.text.disabled,
+  textDisabled: {
+    color: '#C7C7CC',
   },
 });
 

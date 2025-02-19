@@ -20,23 +20,26 @@ export const makeOutgoingCallActionTypes =
   generateThunkActionTypes('call/makeOutgoing');
 export const makeOutgoingCall = createTypedAsyncThunk<
   CallInfo,
-  { to: string },
+  { to: string; duration?: number },
   { rejectValue: MakeOutgoingCallRejectValue }
 >(
   makeOutgoingCallActionTypes.prefix,
-  async ({ to }, { getState, dispatch, rejectWithValue, requestId }) => {
-    console.log('makeOutgoingCall: started', { requestId, to });
+  async (
+    { to, duration },
+    { getState, dispatch, rejectWithValue, requestId },
+  ) => {
+    console.log('makeOutgoingCall: started', { requestId, to, duration });
 
     const state = getState();
     const phoneNumbers = state.voice.phoneNumbers.phoneNumbers;
+    const selectedNumber = state.voice.phoneNumbers.selectedNumber;
 
     if (!phoneNumbers?.length) {
       console.error('No phone numbers available');
       return rejectWithValue({ reason: 'PHONE_NUMBERS_UNAVAILABLE' });
     }
 
-    const Caller_Id =
-      phoneNumbers[Math.floor(Math.random() * phoneNumbers.length)];
+    const Caller_Id = selectedNumber || phoneNumbers[0];
 
     try {
       const makeCall = async (tokenValue: string, isRetry = false) => {
@@ -81,6 +84,20 @@ export const makeOutgoingCall = createTypedAsyncThunk<
           outgoingCall.on(TwilioCall.Event.Connected, () => {
             console.log('Call connected successfully');
             const callSid = outgoingCall.getSid();
+
+            // Add auto-termination timer when call is connected
+            if (duration) {
+              console.log(
+                `Setting call auto-termination timer for ${duration}s`,
+              );
+              setTimeout(() => {
+                if (outgoingCall.getState() !== TwilioCall.State.Disconnected) {
+                  console.log(`Auto-terminating call after ${duration}s`);
+                  outgoingCall.disconnect();
+                }
+              }, duration * 1000);
+            }
+
             if (callSid) {
               AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_CALLS).then((stored) => {
                 const calls = stored ? JSON.parse(stored) : {};
