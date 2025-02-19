@@ -43,13 +43,15 @@ export const colors = {
   },
 
   // Background and surface colors
-  background: '#FFFFFF', // Main background
-  surface: '#F2F2F7', // Card or container background
+  background: {
+    primary: '#FFFFFF', // Main background
+    secondary: '#F8F9FA', // Secondary background
+  },
 
   // Text colors
   text: {
-    primary: '#000000', // Primary text
-    secondary: '#3C3C43', // Secondary text
+    primary: '#1A1A1A', // Primary text
+    secondary: '#666666', // Secondary text
     disabled: '#C7C7CC', // Disabled text
     inverse: '#FFFFFF', // Text on dark backgrounds
   },
@@ -80,7 +82,11 @@ export const colors = {
   button: {
     primary: '#007AFF', // Primary action buttons
     secondary: '#5856D6', // Secondary action buttons
+    success: '#34C759', // Success action buttons
     danger: '#FF3B30', // Destructive action buttons
     disabled: '#C7C7CC', // Disabled buttons
   },
+
+  // Border color
+  border: '#E0E0E0', // Border color
 };
